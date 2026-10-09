@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     let isFetchedFromUrl = false;
     let extractionMethod = 'NONE';
 
-    // Step 1: Follow HTTP redirects to resolve shortlinks & inspect OpenGraph / HTML metadata
+    // Step 1: Follow HTTP redirects to resolve shortlinks (e.g. goo.gl/maps/... -> google.com/maps/reviews/data=...)
     try {
       const httpRes = await fetch(inputUrl, {
         method: 'GET',
@@ -39,24 +39,22 @@ export async function POST(request: Request) {
 
       const html = await httpRes.text();
 
-      // Extract OpenGraph / Meta Title & Description
+      // Check OpenGraph / Meta Title & Description
       const ogTitleMatch = html.match(/<meta property=["']og:title["'] content=["'](.*?)["']/i);
-      const ogDescMatch = html.match(/<meta property=["']og:description["'] content=["'](.*?)["']/i) ||
-                          html.match(/<meta name=["']description["'] content=["'](.*?)["']/i);
+      const ogDescMatch =
+        html.match(/<meta property=["']og:description["'] content=["'](.*?)["']/i) ||
+        html.match(/<meta name=["']description["'] content=["'](.*?)["']/i);
 
       const titleText = ogTitleMatch ? ogTitleMatch[1] : '';
       const descText = ogDescMatch ? ogDescMatch[1] : '';
 
-      // Check if description contains review text or rating
       if (descText && !descText.toLowerCase().includes('find local businesses') && !descText.toLowerCase().includes('view maps')) {
-        // Many Google Maps shared links format: "★★★★☆ · [Comment snippet]" or "Review by [Name]: [Comment]"
         const starMatch = descText.match(/([1-5])\s*(?:star|★)/i);
-        if (starMatch) {
-          rating = parseInt(starMatch[1], 10);
-        }
+        if (starMatch) rating = parseInt(starMatch[1], 10);
 
-        const reviewAuthorMatch = descText.match(/review by (.*?)(?::|—|-|\.|\n)/i) ||
-                                  titleText.match(/review by (.*?)(?::|—|-|\.|\n)/i);
+        const reviewAuthorMatch =
+          descText.match(/review by (.*?)(?::|—|-|\.|\n)/i) ||
+          titleText.match(/review by (.*?)(?::|—|-|\.|\n)/i);
         if (reviewAuthorMatch && reviewAuthorMatch[1]?.trim()) {
           reviewerName = reviewAuthorMatch[1].trim();
         }
@@ -68,7 +66,6 @@ export async function POST(request: Request) {
         }
       }
 
-      // Check title for reviewer name
       if (!reviewerName && titleText) {
         const titleAuthor = titleText.match(/(?:review by|from)\s+([^·\-|:]+)/i);
         if (titleAuthor && titleAuthor[1]?.trim()) {
@@ -79,23 +76,27 @@ export async function POST(request: Request) {
       console.warn('HTTP Metadata Resolution Notice:', httpErr);
     }
 
-    // Step 2: Attempt Puppeteer browser extraction if not already resolved and environment supports it
+    // Step 2: Headless Browser Extraction (supports both local environment & Vercel serverless via @sparticuz/chromium)
     if (!isFetchedFromUrl) {
       let browser;
       try {
-        const puppeteer = await import('puppeteer');
-        browser = await puppeteer.default.launch({
-          headless: true,
-          timeout: 10000,
-          args: [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-gpu',
-            '--single-process',
-            '--no-zygote'
-          ]
-        });
+        if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_VERSION) {
+          const chromium = (await import('@sparticuz/chromium')).default;
+          const puppeteerCore = (await import('puppeteer-core')).default;
+
+          browser = await puppeteerCore.launch({
+            args: [...chromium.args, '--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
+            defaultViewport: { width: 1280, height: 900 },
+            executablePath: await chromium.executablePath(),
+            headless: true
+          });
+        } else {
+          const puppeteer = (await import('puppeteer')).default;
+          browser = await puppeteer.launch({
+            headless: true,
+            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
+          });
+        }
 
         const page = await browser.newPage();
         await page.setUserAgent(
@@ -103,13 +104,17 @@ export async function POST(request: Request) {
         );
         await page.setViewport({ width: 1280, height: 900 });
 
-        await page.goto(resolvedUrl, { waitUntil: 'domcontentloaded', timeout: 12000 });
-        await page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 5000 }).catch(() => {});
+        await page.goto(resolvedUrl, { waitUntil: 'networkidle2', timeout: 25000 });
+        await page.evaluate(() => new Promise((r) => setTimeout(r, 2000)));
 
         resolvedUrl = page.url();
 
         const extracted = await page.evaluate(() => {
           let name = '';
+          let stars = 1;
+          let text = '';
+
+          // 1. Extract Reviewer Name
           const actionBtns = Array.from(document.querySelectorAll('button[aria-label]'));
           for (const btn of actionBtns) {
             const aria = btn.getAttribute('aria-label') || '';
@@ -121,41 +126,69 @@ export async function POST(request: Request) {
           }
 
           if (!name) {
-            const nameSelectors = ['div.d4r55', 'button.alID1d', 'div.fontTitleMedium', 'span[class*="reviewer"]'];
-            for (const sel of nameSelectors) {
+            const nameEl = document.querySelector(
+              'button.fontTitleSmall, button.sZ0S5, div.d4r55, button.alID1d, div.fontTitleMedium, span[class*="reviewer"]'
+            );
+            if (nameEl && nameEl.textContent?.trim() && !nameEl.textContent.includes('Google') && !nameEl.textContent.includes('Search')) {
+              name = nameEl.textContent.trim();
+            }
+          }
+
+          // 2. Extract Star Rating
+          const starEls = document.querySelectorAll('[aria-label*="star"], [aria-label*="Star"], span.kv-star');
+          for (const el of starEls) {
+            const aria = el.getAttribute('aria-label') || '';
+            const m = aria.match(/([1-5])\s*star/i);
+            if (m) {
+              stars = parseInt(m[1], 10);
+              break;
+            }
+          }
+
+          // 3. Extract Review Comment Text (span.wiI7pd is the direct Google Maps review text element)
+          const exactEl = document.querySelector('span.wiI7pd, span[class*="wiI7pd"]');
+          if (exactEl && exactEl.textContent?.trim()) {
+            text = exactEl.textContent.trim();
+          }
+
+          if (!text) {
+            const textSelectors = [
+              'div.MyEned',
+              'span.wi914c',
+              'span.rGSub',
+              'div.fontBodyMedium',
+              'span[class*="review-text"]'
+            ];
+            for (const sel of textSelectors) {
               const el = document.querySelector(sel);
-              if (el && el.textContent?.trim() && !el.textContent.includes('Google Maps') && !el.textContent.includes('Search')) {
-                name = el.textContent.trim();
+              if (el && el.textContent?.trim() && el.textContent.trim().length > 10) {
+                text = el.textContent.trim();
                 break;
               }
             }
           }
 
-          let stars = 1;
-          const starIcons = document.querySelectorAll('span.kv-star, [aria-label*="star"], [aria-label*="Star"]');
-          if (starIcons && starIcons.length > 0) {
-            for (let i = 0; i < starIcons.length; i++) {
-              const label = starIcons[i].getAttribute('aria-label') || '';
-              const match = label.match(/([1-5])/);
-              if (match) {
-                stars = parseInt(match[1], 10);
-                break;
+          // Fallback: parse body innerText around timestamp
+          if (!text) {
+            const bodyLines = (document.body.innerText || '').split('\n').map((l) => l.trim()).filter(Boolean);
+            for (let i = 0; i < bodyLines.length; i++) {
+              const line = bodyLines[i];
+              if (line.includes('ago') || line.includes('month') || line.includes('year') || line.includes('week') || line.includes('day')) {
+                if (i > 0 && !name) {
+                  const prev = bodyLines[i - 1];
+                  if (!prev.includes('PLACE') && !prev.includes('Search') && prev.length < 40) {
+                    name = prev;
+                  }
+                }
+                if (i + 1 < bodyLines.length) {
+                  const next = bodyLines[i + 1];
+                  if (next.length > 15 && !next.includes('Order type') && !next.includes('Meal type')) {
+                    text = next;
+                    break;
+                  }
+                }
               }
             }
-          }
-
-          let text = '';
-          const textSelectors = ['span.wi914c', 'div.My5W2e', 'span.rGSub', 'div.fontBodyMedium', 'span[class*="review-text"]'];
-          for (const sel of textSelectors) {
-            const els = document.querySelectorAll(sel);
-            for (let i = 0; i < els.length; i++) {
-              const content = els[i].textContent?.trim() || '';
-              if (content && content.length > 10 && !content.includes('Share') && !content.includes('Like')) {
-                text = content;
-                break;
-              }
-            }
-            if (text) break;
           }
 
           return { reviewerName: name, rating: stars, comment: text };
@@ -169,7 +202,7 @@ export async function POST(request: Request) {
           extractionMethod = 'PUPPETEER_DOM';
         }
       } catch (puppeteerErr) {
-        console.warn('Puppeteer launch skipped or not supported in this runtime:', puppeteerErr);
+        console.warn('Headless browser extraction notice:', puppeteerErr);
       } finally {
         if (browser) {
           try {
@@ -193,7 +226,7 @@ export async function POST(request: Request) {
       },
       message: isFetchedFromUrl
         ? 'Review extracted successfully.'
-        : 'Google Review link resolved. Automatic scraping was restricted by Google bot protection. You can enter or refine the reviewer details below.'
+        : 'Google Review link resolved. If automated scraping was blocked by cloud bot protection, please review and enter the comment text below.'
     });
   } catch (error: any) {
     console.error('Fetch Review API Error:', error);
