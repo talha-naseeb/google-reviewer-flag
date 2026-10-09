@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createPasswordResetCode } from '@/lib/users';
+import { sendPasswordResetEmail } from '@/lib/email';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,11 +28,27 @@ export async function POST(request: Request) {
       );
     }
 
+    // Dispatch email via Resend API
+    const emailResult = await sendPasswordResetEmail({
+      to: result.user.email,
+      resetCode: result.resetCode,
+      expiresInMinutes: 15
+    });
+
+    const isApiKeyConfigured = Boolean(
+      process.env.RESEND_API_KEY && process.env.RESEND_API_KEY !== 're_xxxxxxxxx'
+    );
+
     return NextResponse.json({
       success: true,
-      message: 'Password reset verification code generated successfully.',
+      message: emailResult.success
+        ? `A 6-digit verification code has been dispatched to ${result.user.email}.`
+        : 'Password reset code generated.',
       email: result.user.email,
-      resetCode: result.resetCode,
+      emailSent: emailResult.success,
+      emailError: emailResult.error || null,
+      // Provide fallback resetCode for seamless testing if Resend key is not yet configured
+      resetCode: isApiKeyConfigured && emailResult.success ? undefined : result.resetCode,
       expiresAt: result.expiresAt
     });
   } catch (error: any) {

@@ -58,9 +58,18 @@ export default function ForgotPasswordPage() {
       const data = await res.json();
 
       if (data.success) {
-        toast.success('Code Generated!', `6-digit reset code sent for ${email}`);
-        setResetCode(data.resetCode || '');
-        setInfoMessage(`Verification code sent! (Dev Auto-fill: ${data.resetCode})`);
+        if (data.emailSent) {
+          toast.success('Email Sent!', `6-digit reset code delivered to ${email}`);
+          setInfoMessage(`We sent a 6-digit verification code to ${email}. Check your inbox.`);
+        } else {
+          toast.success('Code Generated!', `6-digit reset code generated for ${email}`);
+          if (data.resetCode) {
+            setResetCode(data.resetCode);
+            setInfoMessage(`Verification code generated (Dev Auto-fill: ${data.resetCode})`);
+          } else {
+            setInfoMessage(`We dispatched a 6-digit verification code to ${email}.`);
+          }
+        }
         setStep('RESET_PASSWORD');
       } else {
         const msg = data.error || 'Failed to request reset code. Please check email.';
