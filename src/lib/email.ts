@@ -1,8 +1,32 @@
 import nodemailer from 'nodemailer';
+import fs from 'fs';
+import path from 'path';
+
+function getCredentials() {
+  let user = process.env.SMTP_USER?.trim() || process.env.GMAIL_USER?.trim();
+  let pass = process.env.SMTP_PASS?.trim() || process.env.GMAIL_APP_PASSWORD?.trim();
+
+  // If environment variables were not loaded (e.g. dev server started before .env was edited)
+  if (!user || !pass) {
+    try {
+      const envPath = path.resolve(process.cwd(), '.env');
+      if (fs.existsSync(envPath)) {
+        const content = fs.readFileSync(envPath, 'utf8');
+        const userMatch = content.match(/SMTP_USER\s*=\s*([^\r\n]+)/);
+        const passMatch = content.match(/SMTP_PASS\s*=\s*([^\r\n]+)/);
+        if (userMatch && userMatch[1]) user = userMatch[1].trim();
+        if (passMatch && passMatch[1]) pass = passMatch[1].trim();
+      }
+    } catch {
+      // Ignore in serverless/production
+    }
+  }
+
+  return { user, pass };
+}
 
 function getMailTransporter() {
-  const user = process.env.SMTP_USER?.trim() || process.env.GMAIL_USER?.trim();
-  const pass = process.env.SMTP_PASS?.trim() || process.env.GMAIL_APP_PASSWORD?.trim();
+  const { user, pass } = getCredentials();
 
   if (!user || !pass) {
     return null;
@@ -39,13 +63,13 @@ export async function sendPasswordResetEmail({
   expiresInMinutes = 15
 }: SendResetEmailParams): Promise<{ success: boolean; id?: string; error?: string }> {
   const transporter = getMailTransporter();
-  const user = process.env.SMTP_USER?.trim() || process.env.GMAIL_USER?.trim();
+  const { user } = getCredentials();
 
   if (!transporter || !user) {
     console.warn('[Email] Gmail SMTP credentials (SMTP_USER / SMTP_PASS) are not configured in .env.');
     return {
       success: false,
-      error: 'Gmail SMTP credentials (SMTP_USER / SMTP_PASS) are not configured in .env'
+      error: 'Gmail SMTP credentials (SMTP_USER / SMTP_PASS) are not configured.'
     };
   }
 
@@ -137,13 +161,13 @@ export async function sendNewUserInvitationEmail({
   loginUrl = 'https://google-reviewer-flag.vercel.app/login'
 }: SendNewUserEmailParams): Promise<{ success: boolean; id?: string; error?: string }> {
   const transporter = getMailTransporter();
-  const user = process.env.SMTP_USER?.trim() || process.env.GMAIL_USER?.trim();
+  const { user } = getCredentials();
 
   if (!transporter || !user) {
     console.warn('[Email] Gmail SMTP credentials (SMTP_USER / SMTP_PASS) are not configured in .env.');
     return {
       success: false,
-      error: 'Gmail SMTP credentials (SMTP_USER / SMTP_PASS) are not configured in .env'
+      error: 'Gmail SMTP credentials (SMTP_USER / SMTP_PASS) are not configured.'
     };
   }
 
