@@ -17,7 +17,8 @@ import {
   ShieldAlert,
   LayoutDashboard,
   Zap,
-  ChevronDown
+  ChevronDown,
+  LogOut
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -35,6 +36,16 @@ export const Header: React.FC<HeaderProps> = ({
   const { theme, toggleTheme } = useTheme();
   const [isQuickMenuOpen, setIsQuickMenuOpen] = useState(false);
   const quickMenuRef = useRef<HTMLDivElement>(null);
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (e) {}
+    localStorage.removeItem('userLoggedIn');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userName');
+    window.location.href = '/login';
+  };
 
   // Close quick menu when clicking outside
   useEffect(() => {
@@ -260,6 +271,16 @@ export const Header: React.FC<HeaderProps> = ({
         >
           A
         </div>
+
+        {/* Sign Out Button */}
+        <button
+          onClick={handleLogout}
+          className="p-2 rounded-xl text-slate-500 hover:text-rose-600 dark:text-zinc-400 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors shrink-0"
+          title="Sign Out"
+          aria-label="Sign Out"
+        >
+          <LogOut className="w-4 h-4" />
+        </button>
       </div>
     </header>
   );

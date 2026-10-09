@@ -42,7 +42,15 @@ export default function LoginPage() {
 
         toast.success('Signed in successfully!', `Welcome back, ${data.user.name || 'Admin'}`);
         setTimeout(() => {
-          router.push('/');
+          let target = '/';
+          if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            const redirectParam = params.get('redirect');
+            if (redirectParam && redirectParam.startsWith('/')) {
+              target = redirectParam;
+            }
+          }
+          window.location.href = target;
         }, 600);
       } else {
         const msg = data.error || 'Authentication failed. Please check your credentials.';

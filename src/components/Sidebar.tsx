@@ -33,9 +33,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
   // Hide sidebar on login page
   if (pathname === '/login') return null;
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (e) {}
     localStorage.removeItem('userLoggedIn');
-    router.push('/login');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userName');
+    window.location.href = '/login';
   };
 
   const navItems = [
