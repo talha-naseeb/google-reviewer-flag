@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
-    const stats = db.getDashboardStats();
-    const reviews = db.getReviews();
+    const [stats, reviews] = await Promise.all([db.getDashboardStats(), db.getReviews()]);
 
     return NextResponse.json({
       success: true,

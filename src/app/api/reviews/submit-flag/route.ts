@@ -17,8 +17,8 @@ export async function POST(request: Request) {
       flaggedAt: new Date().toISOString().split('T')[0]
     };
 
-    const saved = db.addReview(reviewToSave);
-    const updatedStats = db.getDashboardStats();
+    const saved = await db.addReview(reviewToSave);
+    const updatedStats = await db.getDashboardStats();
 
     return NextResponse.json({
       success: true,

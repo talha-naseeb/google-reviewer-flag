@@ -1,87 +1,63 @@
-import fs from 'fs';
-import path from 'path';
+import { Collection } from 'mongodb';
 import { Review, ModerationStatus, DashboardStats } from '@/types/review';
-import { INITIAL_MOCK_REVIEWS } from './mockData';
+import { getDb } from './mongodb';
 
-const DB_FILE_PATH = path.join(process.cwd(), 'data_store.json');
+let indexesReady = false;
 
-export interface DBData {
-  reviews: Review[];
-  userSession?: {
-    isLoggedIn: boolean;
-    email: string;
-  };
-}
-
-// Initialize database file with initial mock dataset if not existing
-function getDBData(): DBData {
-  try {
-    if (!fs.existsSync(DB_FILE_PATH)) {
-      const initialData: DBData = {
-        reviews: INITIAL_MOCK_REVIEWS,
-        userSession: { isLoggedIn: true, email: 'admin@googleflags.com' }
-      };
-      fs.writeFileSync(DB_FILE_PATH, JSON.stringify(initialData, null, 2), 'utf-8');
-      return initialData;
-    }
-    const content = fs.readFileSync(DB_FILE_PATH, 'utf-8');
-    return JSON.parse(content);
-  } catch (err) {
-    console.error('Database Read Error:', err);
-    return { reviews: INITIAL_MOCK_REVIEWS };
+async function reviewsCollection(): Promise<Collection<Review>> {
+  const database = await getDb();
+  const col = database.collection<Review>('reviews');
+  if (!indexesReady) {
+    await col.createIndex({ id: 1 }, { unique: true });
+    await col.createIndex({ googleReviewUrl: 1 });
+    indexesReady = true;
   }
+  return col;
 }
 
-function saveDBData(data: DBData): void {
-  try {
-    fs.writeFileSync(DB_FILE_PATH, JSON.stringify(data, null, 2), 'utf-8');
-  } catch (err) {
-    console.error('Database Write Error:', err);
-  }
-}
+const noId = { projection: { _id: 0 } } as const;
 
 export const db = {
-  getReviews(): Review[] {
-    const data = getDBData();
-    return data.reviews;
+  async getReviews(): Promise<Review[]> {
+    const col = await reviewsCollection();
+    return col.find({}, noId).sort({ flaggedAt: -1, _id: -1 }).toArray() as Promise<Review[]>;
   },
 
-  addReview(newReview: Review): Review {
-    const data = getDBData();
-    // Prevent duplicates by ID or Google URL
-    const existingIndex = data.reviews.findIndex(
-      (r) => r.id === newReview.id || (newReview.googleReviewUrl && r.googleReviewUrl === newReview.googleReviewUrl)
-    );
+  async addReview(newReview: Review): Promise<Review> {
+    const col = await reviewsCollection();
+    // Upsert by id, or by Google URL so re-flagging the same link updates instead of duplicating.
+    const filter = newReview.googleReviewUrl
+      ? { $or: [{ id: newReview.id }, { googleReviewUrl: newReview.googleReviewUrl }] }
+      : { id: newReview.id };
 
-    if (existingIndex >= 0) {
-      data.reviews[existingIndex] = { ...data.reviews[existingIndex], ...newReview };
-    } else {
-      data.reviews.unshift(newReview);
+    const existing = await col.findOne(filter, noId);
+    if (existing) {
+      const { id: _ignored, ...rest } = newReview;
+      await col.updateOne({ id: existing.id }, { $set: rest });
+      return { ...existing, ...rest } as Review;
     }
-
-    saveDBData(data);
+    await col.insertOne({ ...newReview });
     return newReview;
   },
 
-  updateReviewStatus(id: string, status: ModerationStatus, notes?: string): Review | null {
-    const data = getDBData();
-    const index = data.reviews.findIndex((r) => r.id === id);
-    if (index === -1) return null;
-
-    data.reviews[index].status = status;
+  async updateReviewStatus(id: string, status: ModerationStatus, notes?: string): Promise<Review | null> {
+    const col = await reviewsCollection();
+    const set: Partial<Review> = { status };
     if (status === 'PENDING_GOOGLE_REVIEW') {
-      data.reviews[index].flaggedAt = new Date().toISOString().split('T')[0];
+      set.flaggedAt = new Date().toISOString().split('T')[0];
     }
-    if (notes !== undefined) {
-      data.reviews[index].notes = notes;
-    }
+    if (notes !== undefined) set.notes = notes;
 
-    saveDBData(data);
-    return data.reviews[index];
+    const updated = await col.findOneAndUpdate(
+      { id },
+      { $set: set },
+      { returnDocument: 'after', projection: { _id: 0 } }
+    );
+    return (updated as Review | null) ?? null;
   },
 
-  getDashboardStats(): DashboardStats {
-    const reviews = this.getReviews();
+  async getDashboardStats(): Promise<DashboardStats> {
+    const reviews = await this.getReviews();
     const totalReviews = reviews.length;
     const flaggedCount = reviews.filter((r) => r.status === 'PENDING_GOOGLE_REVIEW' || r.status === 'REMOVED').length;
     const pendingGoogleCount = reviews.filter((r) => r.status === 'PENDING_GOOGLE_REVIEW').length;
@@ -90,13 +66,6 @@ export const db = {
     const totalStars = reviews.reduce((acc, r) => acc + r.rating, 0);
     const averageRating = totalReviews > 0 ? Number((totalStars / totalReviews).toFixed(1)) : 5.0;
 
-    return {
-      totalReviews,
-      flaggedCount,
-      pendingGoogleCount,
-      removedCount,
-      highRiskCount,
-      averageRating
-    };
+    return { totalReviews, flaggedCount, pendingGoogleCount, removedCount, highRiskCount, averageRating };
   }
 };
