@@ -32,6 +32,17 @@ export interface AnalysisResult {
   generatedReportReason: string;
 }
 
+export interface AutomatedSubmissionDetails {
+  reportId: string;
+  submittedAt: string;
+  submittedBy: string;
+  clientId?: string;
+  status: string;
+  queueStatus: string;
+  policyRuleCited: string;
+  channel: string;
+}
+
 export interface Review {
   id: string;
   reviewerName: string;
@@ -46,6 +57,7 @@ export interface Review {
   analysis?: AnalysisResult;
   flaggedAt?: string;
   notes?: string;
+  automatedSubmission?: AutomatedSubmissionDetails;
 }
 
 export interface DashboardStats {
