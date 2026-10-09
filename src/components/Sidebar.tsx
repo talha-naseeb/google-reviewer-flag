@@ -202,26 +202,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           )}
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleLogout}
-              title="Log Out"
-              className={`flex-1 flex items-center justify-center gap-2 bg-slate-100 dark:bg-zinc-800/80 hover:bg-slate-200 dark:hover:bg-zinc-800 text-rose-600 dark:text-rose-400 border border-slate-200 dark:border-zinc-700/80 text-xs font-semibold ${
-                isCollapsed ? 'p-2.5' : 'py-2 px-3'
-              } rounded-xl transition-all`}
-            >
-              <LogOut className="w-4 h-4 shrink-0" />
-              {!isCollapsed && <span>Log Out</span>}
-            </button>
-
-            <button
-              onClick={onToggleCollapse}
-              title={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
-              className="p-2 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-600 dark:text-zinc-300 border border-slate-200 dark:border-zinc-700/80 transition-colors shrink-0"
-            >
-              {isCollapsed ? <PanelLeftOpen className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
-            </button>
-          </div>
+          <button
+            onClick={handleLogout}
+            title="Log Out"
+            className={`w-full flex items-center justify-center gap-2 bg-slate-100 dark:bg-zinc-800/80 hover:bg-slate-200 dark:hover:bg-zinc-800 text-rose-600 dark:text-rose-400 border border-slate-200 dark:border-zinc-700/80 text-xs font-semibold ${
+              isCollapsed ? 'p-2.5' : 'py-2 px-3'
+            } rounded-xl transition-all`}
+          >
+            <LogOut className="w-4 h-4 shrink-0" />
+            {!isCollapsed && <span>Log Out</span>}
+          </button>
         </div>
       </aside>
     </>
