@@ -114,7 +114,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </div>
                 <div className="overflow-hidden text-xs">
                   <p className="font-semibold text-slate-900 dark:text-zinc-200 truncate">Admin Business Profile</p>
-                  <p className="text-[11px] text-slate-500 dark:text-zinc-400 truncate">admin@googleflags.com</p>
+                  <p className="text-[11px] text-slate-500 dark:text-zinc-400 truncate">admin@googlereviewer.com</p>
                 </div>
               </div>
 
@@ -195,7 +195,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
               <div className="overflow-hidden text-xs">
                 <p className="font-semibold text-slate-900 dark:text-zinc-200 truncate">Admin Business Profile</p>
-                <p className="text-[11px] text-slate-500 dark:text-zinc-400 truncate">admin@googleflags.com</p>
+                <p className="text-[11px] text-slate-500 dark:text-zinc-400 truncate">admin@googlereviewer.com</p>
               </div>
             </div>
           )}

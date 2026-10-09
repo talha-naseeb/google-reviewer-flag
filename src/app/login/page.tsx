@@ -2,18 +2,42 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ShieldAlert, Lock, Mail, ArrowRight } from 'lucide-react';
+import { ShieldAlert, Lock, Mail, ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('admin@googleflags.com');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState('admin@googlereviewer.com');
+  const [password, setPassword] = useState('googlereviewer!123!!admin');
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    localStorage.setItem('userLoggedIn', 'true');
-    localStorage.setItem('userEmail', email);
-    router.push('/');
+    setIsLoading(true);
+    setErrorMessage(null);
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await res.json();
+
+      if (data.success && data.user) {
+        localStorage.setItem('userLoggedIn', 'true');
+        localStorage.setItem('userEmail', data.user.email);
+        localStorage.setItem('userName', data.user.name || 'Admin');
+        router.push('/');
+      } else {
+        setErrorMessage(data.error || 'Authentication failed. Please check credentials.');
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Network error occurred. Try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -28,6 +52,14 @@ export default function LoginPage() {
           <p className="text-xs text-slate-500 dark:text-zinc-400">Google Review Link Auto-Fetcher & Flagging System</p>
         </div>
 
+        {/* Error message banner */}
+        {errorMessage && (
+          <div className="flex items-center gap-2 p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-600 dark:text-rose-400 text-xs font-semibold">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
+
         {/* Login Form */}
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
@@ -39,7 +71,7 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@googleflags.com"
+                placeholder="admin@googlereviewer.com"
                 className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-zinc-200 text-sm rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:border-rose-500 transition-colors"
               />
             </div>
@@ -62,15 +94,26 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white font-semibold text-sm py-3.5 rounded-xl shadow-lg shadow-rose-950/20 transition-all mt-2"
+            disabled={isLoading}
+            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white font-semibold text-sm py-3.5 rounded-xl shadow-lg shadow-rose-950/20 transition-all mt-2 disabled:opacity-70"
           >
-            <span>Login to Flagging Dashboard</span>
-            <ArrowRight className="w-4 h-4" />
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Authenticating with MongoDB...</span>
+              </>
+            ) : (
+              <>
+                <span>Login to Flagging Dashboard</span>
+                <ArrowRight className="w-4 h-4" />
+              </>
+            )}
           </button>
         </form>
 
-        <div className="border-t border-slate-200 dark:border-zinc-800/80 pt-4 text-center text-xs text-slate-500 dark:text-zinc-400">
-          Demo Admin Credentials pre-filled. Click Login to access.
+        <div className="border-t border-slate-200 dark:border-zinc-800/80 pt-4 text-center text-xs text-slate-500 dark:text-zinc-400 space-y-1">
+          <p className="font-semibold text-slate-700 dark:text-zinc-300">Database User Pre-filled</p>
+          <p className="text-[11px] font-mono text-slate-500 dark:text-zinc-500">admin@googlereviewer.com</p>
         </div>
       </div>
     </div>
