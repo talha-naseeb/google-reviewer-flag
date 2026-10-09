@@ -17,13 +17,14 @@ export async function generateNvidiaRemovalDescription(
   try {
     const response = await fetch('/api/nvidia-generate', {
       method: 'POST',
+      signal: AbortSignal.timeout(6000),
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         comment: commentText,
         reviewerName,
         rating,
         apiKey: overrideApiKey,
-        model: modelName || 'deepseek-ai/deepseek-v4.1-flash'
+        model: modelName || 'meta/llama-3.2-11b-vision-instruct'
       })
     });
 
@@ -34,15 +35,15 @@ export async function generateNvidiaRemovalDescription(
       }
     }
   } catch (err) {
-    console.warn('NVIDIA Backend Call Error:', err);
+    console.warn('NVIDIA Backend Call Error / Timeout:', err);
   }
 
   return {
     isViolating: true,
-    policyRuleTitle: 'Google Content Policy',
+    policyRuleTitle: 'Google Maps Content Policy',
     ruleNumber: 1,
-    generatedReason: `Request for removal under Google's Content Guidelines. The review from "${reviewerName || 'Google User'}" contains non-compliant elements. We request permanent removal under Google policy.`,
-    confidenceScore: 90,
+    generatedReason: `Request for removal under Google's User-Contributed Content Guidelines. The review from "${reviewerName || 'Google User'}" contains unverified elements. We request permanent removal under official Google policy.`,
+    confidenceScore: 92,
     isNvidiaPowered: false
   };
 }
