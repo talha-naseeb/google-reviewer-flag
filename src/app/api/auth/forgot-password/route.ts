@@ -28,7 +28,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Dispatch email via Resend API
+    // Dispatch email via Gmail SMTP
     const emailResult = await sendPasswordResetEmail({
       to: result.user.email,
       resetCode: result.resetCode,

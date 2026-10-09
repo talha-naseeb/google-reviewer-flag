@@ -1,11 +1,23 @@
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 
-function getResendClient(): Resend | null {
-  const key = process.env.RESEND_API_KEY?.trim();
-  if (!key || key.startsWith('re_xxxx') || key.length < 10) {
+function getMailTransporter() {
+  const user = process.env.SMTP_USER?.trim() || process.env.GMAIL_USER?.trim();
+  const pass = process.env.SMTP_PASS?.trim() || process.env.GMAIL_APP_PASSWORD?.trim();
+
+  if (!user || !pass) {
     return null;
   }
-  return new Resend(key);
+
+  // Clean pass in case user pasted 16-letter code with spaces (e.g. "abcd efgh ijkl mnop")
+  const cleanPass = pass.replace(/\s+/g, '');
+
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user,
+      pass: cleanPass
+    }
+  });
 }
 
 export interface SendResetEmailParams {
@@ -26,17 +38,18 @@ export async function sendPasswordResetEmail({
   resetCode,
   expiresInMinutes = 15
 }: SendResetEmailParams): Promise<{ success: boolean; id?: string; error?: string }> {
-  const resend = getResendClient();
+  const transporter = getMailTransporter();
+  const user = process.env.SMTP_USER?.trim() || process.env.GMAIL_USER?.trim();
 
-  if (!resend) {
-    console.warn('[Email] Resend API key is not configured or is a placeholder. Skipping email dispatch.');
+  if (!transporter || !user) {
+    console.warn('[Email] Gmail SMTP credentials (SMTP_USER / SMTP_PASS) are not configured in .env.');
     return {
       success: false,
-      error: 'RESEND_API_KEY is not configured in .env'
+      error: 'Gmail SMTP credentials (SMTP_USER / SMTP_PASS) are not configured in .env'
     };
   }
 
-  const fromEmail = process.env.RESEND_FROM_EMAIL?.trim() || 'Google Review Moderator <onboarding@resend.dev>';
+  const fromEmail = process.env.SMTP_FROM?.trim() || `"Google Review Moderator" <${user}>`;
 
   const htmlContent = `
 <!DOCTYPE html>
@@ -102,22 +115,17 @@ export async function sendPasswordResetEmail({
   `;
 
   try {
-    const data = await resend.emails.send({
+    const info = await transporter.sendMail({
       from: fromEmail,
       to,
       subject: `[${resetCode}] Your Password Reset Code - Google Review Moderator`,
       html: htmlContent
     });
 
-    if (data.error) {
-      console.error('[Email] Resend API error:', data.error);
-      return { success: false, error: data.error.message };
-    }
-
-    console.log(`[Email] Password reset email sent to ${to} (Message ID: ${data.data?.id})`);
-    return { success: true, id: data.data?.id };
+    console.log(`[Email] Password reset email sent to ${to} (Message ID: ${info.messageId})`);
+    return { success: true, id: info.messageId };
   } catch (err: any) {
-    console.error('[Email] Unexpected error sending email via Resend:', err);
+    console.error('[Email] Unexpected error sending email via Gmail SMTP:', err);
     return { success: false, error: err.message || 'Failed to dispatch email' };
   }
 }
@@ -128,17 +136,18 @@ export async function sendNewUserInvitationEmail({
   name = 'Moderator',
   loginUrl = 'https://google-reviewer-flag.vercel.app/login'
 }: SendNewUserEmailParams): Promise<{ success: boolean; id?: string; error?: string }> {
-  const resend = getResendClient();
+  const transporter = getMailTransporter();
+  const user = process.env.SMTP_USER?.trim() || process.env.GMAIL_USER?.trim();
 
-  if (!resend) {
-    console.warn('[Email] Resend API key is not configured. Skipping email dispatch.');
+  if (!transporter || !user) {
+    console.warn('[Email] Gmail SMTP credentials (SMTP_USER / SMTP_PASS) are not configured in .env.');
     return {
       success: false,
-      error: 'RESEND_API_KEY is not configured in .env'
+      error: 'Gmail SMTP credentials (SMTP_USER / SMTP_PASS) are not configured in .env'
     };
   }
 
-  const fromEmail = process.env.RESEND_FROM_EMAIL?.trim() || 'Google Review Moderator <onboarding@resend.dev>';
+  const fromEmail = process.env.SMTP_FROM?.trim() || `"Google Review Moderator" <${user}>`;
 
   const htmlContent = `
 <!DOCTYPE html>
@@ -191,7 +200,7 @@ export async function sendNewUserInvitationEmail({
         </a>
       </div>
 
-      <p style="margin: 0; font-size: 12px; color: #a1a1aa; line-height: 1.5; border-top: 1px solid #27272a; pt-4; padding-top: 16px;">
+      <p style="margin: 0; font-size: 12px; color: #a1a1aa; line-height: 1.5; border-top: 1px solid #27272a; padding-top: 16px;">
         🔒 <strong>Security recommendation:</strong> Please change your temporary password immediately under <em>Settings &gt; Change Password</em> upon your first login.
       </p>
     </div>
@@ -208,22 +217,17 @@ export async function sendNewUserInvitationEmail({
   `;
 
   try {
-    const data = await resend.emails.send({
+    const info = await transporter.sendMail({
       from: fromEmail,
       to,
       subject: 'Welcome to Google Review Moderator - Your Login Credentials',
       html: htmlContent
     });
 
-    if (data.error) {
-      console.error('[Email] Resend API error sending welcome email:', data.error);
-      return { success: false, error: data.error.message };
-    }
-
-    console.log(`[Email] Welcome email sent to ${to} (Message ID: ${data.data?.id})`);
-    return { success: true, id: data.data?.id };
+    console.log(`[Email] Welcome email sent to ${to} (Message ID: ${info.messageId})`);
+    return { success: true, id: info.messageId };
   } catch (err: any) {
-    console.error('[Email] Unexpected error sending welcome email:', err);
+    console.error('[Email] Unexpected error sending welcome email via Gmail SMTP:', err);
     return { success: false, error: err.message || 'Failed to dispatch email' };
   }
 }

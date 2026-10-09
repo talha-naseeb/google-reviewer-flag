@@ -318,7 +318,7 @@ export async function provisionUserWithTempPassword({
     await col.insertOne(newUser);
   }
 
-  // Attempt sending invitation email via Resend
+  // Attempt sending invitation email via Gmail SMTP
   const emailResult = await sendNewUserInvitationEmail({
     to: normalizedEmail,
     tempPassword: actualTempPassword,
