@@ -224,18 +224,21 @@ export default function SingleLinkFlagPage() {
             )}
           </div>
           <div className="flex flex-col sm:flex-row gap-3">
-            <input
-              type="text"
-              value={urlInput}
-              onChange={(e) => {
-                setUrlInput(e.target.value);
-                if (e.target.value.includes('http')) {
-                  handleAutoFetch(e.target.value);
-                }
-              }}
-              placeholder="https://maps.app.goo.gl/... or https://www.google.com/maps/reviews/..."
-              className="flex-1 bg-slate-50 dark:bg-zinc-950 border border-slate-300 dark:border-zinc-800 text-slate-900 dark:text-zinc-200 text-xs rounded-xl px-4 py-3.5 focus:outline-none focus:border-rose-500 font-mono transition-colors"
-            />
+            <div className="relative flex-1">
+              <Link2 className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-rose-500 pointer-events-none" />
+              <input
+                type="text"
+                value={urlInput}
+                onChange={(e) => {
+                  setUrlInput(e.target.value);
+                  if (e.target.value.includes('http')) {
+                    handleAutoFetch(e.target.value);
+                  }
+                }}
+                placeholder="https://maps.app.goo.gl/... or https://www.google.com/maps/reviews/..."
+                className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-300 dark:border-zinc-800 text-slate-900 dark:text-zinc-200 text-xs rounded-xl pl-10 pr-4 py-3.5 focus:outline-none focus:border-rose-500 font-mono transition-colors shadow-inner"
+              />
+            </div>
             <button
               onClick={() => handleAutoFetch(urlInput)}
               disabled={isFetchingUrl || !urlInput.trim()}
