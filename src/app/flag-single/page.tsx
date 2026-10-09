@@ -141,7 +141,9 @@ export default function SingleLinkFlagPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          submitOnBehalfOf: 'admin@googlereviewer.com',
+          submitOnBehalfOf:
+            (typeof window !== 'undefined' && localStorage.getItem('userEmail')) ||
+            'admin@googlereviewer.com',
           review: {
             id: `rev-${Date.now()}`,
             reviewerName: reviewerName.trim() || 'Google User',

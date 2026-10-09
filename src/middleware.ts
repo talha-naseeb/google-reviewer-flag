@@ -17,6 +17,8 @@ export function middleware(request: NextRequest) {
   // Public authentication routes
   const isPublicAuthRoute =
     pathname.startsWith('/login') ||
+    pathname.startsWith('/forgot-password') ||
+    pathname.startsWith('/reset-password') ||
     pathname.startsWith('/api/auth');
 
   // If user is NOT authenticated
@@ -37,8 +39,13 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // If user IS authenticated and trying to access /login, redirect to dashboard
-  if (session && pathname === '/login') {
+  // If user IS authenticated and trying to access auth pages, redirect to dashboard
+  if (
+    session &&
+    (pathname === '/login' ||
+      pathname === '/forgot-password' ||
+      pathname === '/reset-password')
+  ) {
     const dashboardUrl = new URL('/', request.url);
     return NextResponse.redirect(dashboardUrl);
   }

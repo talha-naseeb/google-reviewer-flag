@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -11,6 +11,7 @@ import {
   Settings,
   LogOut,
   ChevronRight,
+  KeyRound,
   X
 } from 'lucide-react';
 
@@ -30,8 +31,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const pathname = usePathname();
   const router = useRouter();
 
-  // Hide sidebar on login page
-  if (pathname === '/login') return null;
+  // Hide sidebar on auth pages
+  if (
+    pathname === '/login' ||
+    pathname === '/forgot-password' ||
+    pathname === '/reset-password'
+  ) {
+    return null;
+  }
+
+  const [userName, setUserName] = useState('Admin User');
+  const [userEmail, setUserEmail] = useState('admin@googlereviewer.com');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedName = localStorage.getItem('userName');
+      const storedEmail = localStorage.getItem('userEmail');
+      if (storedName) setUserName(storedName);
+      if (storedEmail) setUserEmail(storedEmail);
+    }
+  }, []);
+
+  const userInitial = userName ? userName.charAt(0).toUpperCase() : 'U';
 
   const handleLogout = async () => {
     try {
@@ -47,6 +68,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { label: 'Dashboard', href: '/', icon: LayoutDashboard },
     { label: 'Single Link Flagging', href: '/flag-single', icon: Link2 },
     { label: 'Bulk CSV Flagging', href: '/flag-bulk', icon: FileSpreadsheet },
+    { label: 'Change Password', href: '/change-password', icon: KeyRound },
     { label: 'Settings', href: '/settings', icon: Settings }
   ];
 
@@ -115,11 +137,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div className="pt-4 border-t border-slate-200 dark:border-zinc-800/80 space-y-3">
               <div className="flex items-center gap-3 px-2">
                 <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 flex items-center justify-center font-bold text-xs text-rose-500">
-                  A
+                  {userInitial}
                 </div>
                 <div className="overflow-hidden text-xs">
-                  <p className="font-semibold text-slate-900 dark:text-zinc-200 truncate">Admin Business Profile</p>
-                  <p className="text-[11px] text-slate-500 dark:text-zinc-400 truncate">admin@googlereviewer.com</p>
+                  <p className="font-semibold text-slate-900 dark:text-zinc-200 truncate">{userName}</p>
+                  <p className="text-[11px] text-slate-500 dark:text-zinc-400 truncate">{userEmail}</p>
                 </div>
               </div>
 
@@ -196,11 +218,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {!isCollapsed && (
             <div className="flex items-center gap-3 px-1">
               <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 flex items-center justify-center font-bold text-xs text-rose-500 shrink-0">
-                A
+                {userInitial}
               </div>
               <div className="overflow-hidden text-xs">
-                <p className="font-semibold text-slate-900 dark:text-zinc-200 truncate">Admin Business Profile</p>
-                <p className="text-[11px] text-slate-500 dark:text-zinc-400 truncate">admin@googlereviewer.com</p>
+                <p className="font-semibold text-slate-900 dark:text-zinc-200 truncate">{userName}</p>
+                <p className="text-[11px] text-slate-500 dark:text-zinc-400 truncate">{userEmail}</p>
               </div>
             </div>
           )}

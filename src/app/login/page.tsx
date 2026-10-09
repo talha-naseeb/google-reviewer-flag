@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ToastProvider';
 import { ShieldAlert, Lock, Mail, ArrowRight, AlertCircle, Loader2, CheckCircle2 } from 'lucide-react';
@@ -150,6 +151,14 @@ export default function LoginPage() {
                 }`}
               />
             </div>
+            <div className="flex items-center justify-end mt-1.5">
+              <Link
+                href="/forgot-password"
+                className="text-xs font-semibold text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 transition-colors hover:underline"
+              >
+                Forgot Password?
+              </Link>
+            </div>
           </div>
 
           {/* Login Submit Button with Validation and Loading States */}
@@ -181,8 +190,8 @@ export default function LoginPage() {
         </form>
 
         <div className="border-t border-slate-200 dark:border-zinc-800/80 pt-4 text-center text-xs text-slate-500 dark:text-zinc-400 space-y-1">
-          <p className="font-semibold text-slate-700 dark:text-zinc-300">Database User Pre-filled</p>
-          <p className="text-[11px] font-mono text-slate-500 dark:text-zinc-500">admin@googlereviewer.com</p>
+          <p className="font-semibold text-slate-700 dark:text-zinc-300">Default Authorized Accounts</p>
+          <p className="text-[11px] font-mono text-slate-500 dark:text-zinc-400">jafarkhanaj@gmail.com • admin@googlereviewer.com</p>
         </div>
       </div>
     </div>

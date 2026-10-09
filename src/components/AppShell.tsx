@@ -12,13 +12,16 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
-  const isLoginPage = pathname === '/login';
+  const isAuthPage =
+    pathname === '/login' ||
+    pathname === '/forgot-password' ||
+    pathname === '/reset-password';
 
   return (
     <ThemeProvider>
       <ToastProvider>
         <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 transition-colors">
-        {!isLoginPage && (
+        {!isAuthPage && (
           <Sidebar
             isCollapsed={isSidebarCollapsed}
             onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
@@ -29,14 +32,14 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
         <div
           className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${
-            !isLoginPage
+            !isAuthPage
               ? isSidebarCollapsed
                 ? 'md:pl-20'
                 : 'md:pl-64'
               : ''
           }`}
         >
-          {!isLoginPage && (
+          {!isAuthPage && (
             <Header
               isSidebarCollapsed={isSidebarCollapsed}
               onToggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
