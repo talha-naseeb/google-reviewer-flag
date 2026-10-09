@@ -12,11 +12,9 @@ import {
   CheckCircle2,
   AlertTriangle,
   Link2,
-  ExternalLink,
-  Copy,
-  Check,
   RefreshCw,
-  Sparkles
+  Sparkles,
+  Inbox
 } from 'lucide-react';
 
 export default function MainDashboardPage() {
@@ -32,7 +30,17 @@ export default function MainDashboardPage() {
 
   const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'ACTIVE' | 'COMPLETED'>('ACTIVE');
+
+  // Check URL query on mount (e.g. /?tab=completed)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('tab') === 'completed') {
+        setActiveTab('COMPLETED');
+      }
+    }
+  }, []);
 
   const fetchDashboardData = async (showNotice = false) => {
     setIsLoading(true);
@@ -65,27 +73,23 @@ export default function MainDashboardPage() {
         body: JSON.stringify({ status })
       });
       if (res.ok) {
-        toast.success('Status Updated', `Review marked as ${status.toLowerCase()}`);
+        if (status === 'REMOVED') {
+          toast.success('Review Marked Completed!', 'Removed from active list and moved to Completed Flags.');
+        } else {
+          toast.success('Flag Reopened!', 'Review moved back to Active / Pending Flags.');
+        }
         fetchDashboardData(false);
       } else {
-        toast.error('Update Failed', 'Could not update review status.');
+        toast.error('Update Failed', 'Could not update review status in MongoDB.');
       }
-    } catch (e: any) {
-      toast.error('Error', e.message || 'Status update failed.');
+    } catch (err: any) {
+      toast.error('Error', err.message || 'Status update failed.');
     }
   };
 
-  const handleCopyReason = (reasonText: string, id: string) => {
-    navigator.clipboard.writeText(reasonText);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
-  };
-
-  const handleOpenGoogleLink = (targetUrl: string, reasonText: string) => {
-    if (reasonText) navigator.clipboard.writeText(reasonText);
-    const finalUrl = targetUrl.startsWith('http') ? targetUrl : `https://${targetUrl}`;
-    window.open(finalUrl, '_blank', 'noopener,noreferrer');
-  };
+  // Separate active/pending flags from completed/removed flags
+  const activeReviews = reviews.filter((r) => r.status !== 'REMOVED');
+  const completedReviews = reviews.filter((r) => r.status === 'REMOVED');
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
@@ -104,7 +108,7 @@ export default function MainDashboardPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => fetchDashboardData(true)}
-            className="p-2.5 rounded-xl bg-slate-100 dark:bg-zinc-800/80 hover:bg-slate-200 dark:hover:bg-zinc-800 border border-slate-200 dark:border-zinc-700/60 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 transition-colors"
+            className="p-2.5 rounded-xl bg-slate-100 dark:bg-zinc-800/80 hover:bg-slate-200 dark:hover:bg-zinc-800 border border-slate-200 dark:border-zinc-700/60 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 transition-colors cursor-pointer"
             title="Refresh Dashboard"
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-rose-500' : ''}`} />
@@ -112,7 +116,7 @@ export default function MainDashboardPage() {
 
           <Link
             href="/flag-single"
-            className="flex items-center gap-2 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-md shadow-rose-950/20 transition-all"
+            className="flex items-center gap-2 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-md shadow-rose-950/20 transition-all cursor-pointer"
           >
             <Link2 className="w-4 h-4" />
             <span>Flag Single Review</span>
@@ -137,7 +141,7 @@ export default function MainDashboardPage() {
             <Clock className="w-5 h-5 text-purple-600 dark:text-purple-400" />
           </div>
           <div className="text-3xl font-bold text-slate-900 dark:text-zinc-100">{stats.pendingGoogleCount}</div>
-          <p className="text-[11px] text-slate-500 dark:text-zinc-400">Awaiting Google policy review</p>
+          <p className="text-[11px] text-slate-500 dark:text-zinc-400">Awaiting Google policy takedown</p>
         </div>
 
         <div className="bg-white dark:bg-zinc-900/80 border border-slate-200 dark:border-zinc-800/80 p-5 rounded-2xl space-y-2 shadow-sm dark:shadow-lg relative overflow-hidden group transition-colors">
@@ -146,7 +150,7 @@ export default function MainDashboardPage() {
             <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
           </div>
           <div className="text-3xl font-bold text-slate-900 dark:text-zinc-100">{stats.removedCount}</div>
-          <p className="text-[11px] text-slate-500 dark:text-zinc-400">Successfully removed from profile</p>
+          <p className="text-[11px] text-slate-500 dark:text-zinc-400">Successfully removed & completed</p>
         </div>
 
         <div className="bg-white dark:bg-zinc-900/80 border border-slate-200 dark:border-zinc-800/80 p-5 rounded-2xl space-y-2 shadow-sm dark:shadow-lg relative overflow-hidden group transition-colors">
@@ -161,32 +165,112 @@ export default function MainDashboardPage() {
         </div>
       </div>
 
-      {/* Structured HTML Data Table */}
-      <div className="bg-white dark:bg-zinc-900/80 border border-slate-200 dark:border-zinc-800/80 rounded-3xl p-5 sm:p-6 space-y-4 shadow-sm dark:shadow-xl transition-colors">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 dark:border-zinc-800/80 pb-4">
-          <div>
-            <h3 className="font-bold text-slate-900 dark:text-zinc-100 text-base flex items-center gap-2">
-              <span>Submitted Flagged Reviews</span>
-              <span className="text-xs font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 px-2.5 py-0.5 rounded-full border border-rose-500/20">
-                {reviews.length} Total
+      {/* Main Table Container with Tab Switching */}
+      <div className="bg-white dark:bg-zinc-900/80 border border-slate-200 dark:border-zinc-800/80 rounded-3xl p-5 sm:p-6 space-y-5 shadow-sm dark:shadow-xl transition-colors">
+        {/* Navigation Tabs Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-zinc-800/80 pb-4">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setActiveTab('ACTIVE')}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'ACTIVE'
+                  ? 'bg-rose-600 text-white shadow-md shadow-rose-950/20'
+                  : 'bg-slate-100 dark:bg-zinc-800/70 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100'
+              }`}
+            >
+              <Clock className="w-4 h-4" />
+              <span>Active Flags</span>
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                activeTab === 'ACTIVE'
+                  ? 'bg-white/20 text-white'
+                  : 'bg-slate-200 dark:bg-zinc-700 text-slate-700 dark:text-zinc-300'
+              }`}>
+                {activeReviews.length}
               </span>
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">Persisted in JSON database store</p>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('COMPLETED')}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'COMPLETED'
+                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/20'
+                  : 'bg-slate-100 dark:bg-zinc-800/70 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100'
+              }`}
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              <span>Completed Flags</span>
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                activeTab === 'COMPLETED'
+                  ? 'bg-white/20 text-white'
+                  : 'bg-slate-200 dark:bg-zinc-700 text-slate-700 dark:text-zinc-300'
+              }`}>
+                {completedReviews.length}
+              </span>
+            </button>
+          </div>
+
+          <div className="text-xs text-slate-500 dark:text-zinc-400">
+            {activeTab === 'ACTIVE' ? (
+              <span>Reviews awaiting Google removal or under review</span>
+            ) : (
+              <span className="text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Reviews confirmed removed from Google</span>
+              </span>
+            )}
           </div>
         </div>
 
-        {reviews.length > 0 ? (
-          <ReviewsTable reviews={reviews} onMarkRemoved={(id) => handleUpdateStatus(id, 'REMOVED')} />
-        ) : (
-          <div className="text-center py-10 text-xs text-slate-500 dark:text-zinc-400 space-y-3 bg-slate-50 dark:bg-zinc-950/40 rounded-2xl border border-slate-200 dark:border-zinc-800/60">
-            <p className="text-slate-600 dark:text-zinc-400 font-medium">No flagged review submissions recorded yet.</p>
-            <Link
-              href="/flag-single"
-              className="inline-flex items-center gap-1.5 text-rose-600 dark:text-rose-400 hover:underline font-semibold"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Flag your first Google review link</span>
-            </Link>
+        {/* TAB 1: ACTIVE / PENDING REVIEWS */}
+        {activeTab === 'ACTIVE' && (
+          <div>
+            {activeReviews.length > 0 ? (
+              <ReviewsTable
+                reviews={activeReviews}
+                mode="active"
+                onMarkRemoved={(id) => handleUpdateStatus(id, 'REMOVED')}
+              />
+            ) : (
+              <div className="text-center py-12 text-xs text-slate-500 dark:text-zinc-400 space-y-3 bg-slate-50 dark:bg-zinc-950/40 rounded-2xl border border-slate-200 dark:border-zinc-800/60">
+                <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-zinc-800 text-slate-400 flex items-center justify-center mx-auto">
+                  <Inbox className="w-5 h-5" />
+                </div>
+                <p className="text-slate-700 dark:text-zinc-300 font-semibold text-sm">No Active Flags Pending</p>
+                <p className="text-slate-500 dark:text-zinc-400">All submitted reviews have either been resolved or none are flagged.</p>
+                <div className="pt-2">
+                  <Link
+                    href="/flag-single"
+                    className="inline-flex items-center gap-1.5 text-rose-600 dark:text-rose-400 hover:underline font-semibold"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Flag a new Google review link</span>
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 2: COMPLETED / REMOVED REVIEWS */}
+        {activeTab === 'COMPLETED' && (
+          <div>
+            {completedReviews.length > 0 ? (
+              <ReviewsTable
+                reviews={completedReviews}
+                mode="completed"
+                onReopen={(id) => handleUpdateStatus(id, 'PENDING_GOOGLE_REVIEW')}
+              />
+            ) : (
+              <div className="text-center py-12 text-xs text-slate-500 dark:text-zinc-400 space-y-3 bg-slate-50 dark:bg-zinc-950/40 rounded-2xl border border-slate-200 dark:border-zinc-800/60">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto">
+                  <CheckCircle2 className="w-5 h-5" />
+                </div>
+                <p className="text-slate-700 dark:text-zinc-300 font-semibold text-sm">No Completed Flags Yet</p>
+                <p className="text-slate-500 dark:text-zinc-400">
+                  Once Google removes a review, click <strong>"Mark Completed"</strong> on the Active Flags tab to move it into this archive.
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>

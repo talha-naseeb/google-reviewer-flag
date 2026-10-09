@@ -12,6 +12,7 @@ import {
   LogOut,
   ChevronRight,
   KeyRound,
+  CheckCircle2,
   X
 } from 'lucide-react';
 
@@ -68,6 +69,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { label: 'Dashboard', href: '/', icon: LayoutDashboard },
     { label: 'Single Link Flagging', href: '/flag-single', icon: Link2 },
     { label: 'Bulk CSV Flagging', href: '/flag-bulk', icon: FileSpreadsheet },
+    { label: 'Completed Flags', href: '/completed-flags', icon: CheckCircle2 },
     { label: 'Change Password', href: '/change-password', icon: KeyRound },
     { label: 'Settings', href: '/settings', icon: Settings }
   ];

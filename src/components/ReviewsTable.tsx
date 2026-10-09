@@ -3,11 +3,22 @@
 import React, { useState } from 'react';
 import { useToast } from '@/components/ToastProvider';
 import { Review } from '@/types/review';
-import { Copy, Check, ExternalLink, CheckCircle2, Star } from 'lucide-react';
+import {
+  Copy,
+  Check,
+  ExternalLink,
+  CheckCircle2,
+  Star,
+  RotateCcw,
+  ShieldCheck,
+  Clock
+} from 'lucide-react';
 
 interface ReviewsTableProps {
   reviews: Review[];
+  mode?: 'active' | 'completed' | 'all';
   onMarkRemoved?: (id: string) => void;
+  onReopen?: (id: string) => void;
 }
 
 const Stars: React.FC<{ value: number }> = ({ value }) => (
@@ -25,14 +36,19 @@ const Stars: React.FC<{ value: number }> = ({ value }) => (
   </div>
 );
 
-export const ReviewsTable: React.FC<ReviewsTableProps> = ({ reviews, onMarkRemoved }) => {
+export const ReviewsTable: React.FC<ReviewsTableProps> = ({
+  reviews,
+  mode = 'all',
+  onMarkRemoved,
+  onReopen
+}) => {
   const { toast } = useToast();
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const handleCopy = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
     setCopiedId(id);
-    toast.info('Copied!', 'AI removal description copied to clipboard');
+    toast.info('Copied!', 'AI removal justification copied to clipboard');
     setTimeout(() => setCopiedId(null), 2000);
   };
 
@@ -52,17 +68,17 @@ export const ReviewsTable: React.FC<ReviewsTableProps> = ({ reviews, onMarkRemov
           <col className="w-[18%]" />
           <col className="w-[10%]" />
           <col className="w-[17%]" />
-          <col className="w-[12%]" />
-          <col className="w-[28%]" />
+          <col className="w-[13%]" />
+          <col className="w-[27%]" />
           <col className="w-[15%]" />
         </colgroup>
         <thead>
           <tr className="bg-slate-50 dark:bg-zinc-950/60 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
             <th className="px-4 py-3 border-b border-slate-200 dark:border-zinc-800">Reviewer</th>
             <th className="px-4 py-3 border-b border-slate-200 dark:border-zinc-800">Rating</th>
-            <th className="px-4 py-3 border-b border-slate-200 dark:border-zinc-800">Policy Rule</th>
+            <th className="px-4 py-3 border-b border-slate-200 dark:border-zinc-800">Policy Violation</th>
             <th className="px-4 py-3 border-b border-slate-200 dark:border-zinc-800">Status</th>
-            <th className="px-4 py-3 border-b border-slate-200 dark:border-zinc-800">Removal Description</th>
+            <th className="px-4 py-3 border-b border-slate-200 dark:border-zinc-800">Legal Justification</th>
             <th className="px-4 py-3 border-b border-slate-200 dark:border-zinc-800 text-right">Actions</th>
           </tr>
         </thead>
@@ -70,14 +86,18 @@ export const ReviewsTable: React.FC<ReviewsTableProps> = ({ reviews, onMarkRemov
           {reviews.map((r) => {
             const rule = r.analysis?.primaryViolation;
             const reason = r.analysis?.generatedReportReason || r.comment || '';
-            const removed = r.status === 'REMOVED';
+            const isCompleted = r.status === 'REMOVED';
 
             return (
-              <tr key={r.id} className="align-top hover:bg-slate-50 dark:hover:bg-zinc-800/40">
+              <tr key={r.id} className="align-top hover:bg-slate-50 dark:hover:bg-zinc-800/40 transition-colors">
                 {/* Reviewer */}
                 <td className="px-4 py-4">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-9 h-9 shrink-0 rounded-full bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-sm font-bold text-rose-600 dark:text-rose-400">
+                    <div className={`w-9 h-9 shrink-0 rounded-full border flex items-center justify-center text-sm font-bold ${
+                      isCompleted
+                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+                        : 'bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400'
+                    }`}>
                       {(r.reviewerName || 'G').charAt(0).toUpperCase()}
                     </div>
                     <div className="min-w-0">
@@ -100,19 +120,21 @@ export const ReviewsTable: React.FC<ReviewsTableProps> = ({ reviews, onMarkRemov
                     Rule #{rule?.ruleNumber || 1}
                   </p>
                   <p className="text-xs text-slate-600 dark:text-zinc-400 line-clamp-2">
-                    {rule?.ruleTitle || 'Content Policy'}
+                    {rule?.ruleTitle || 'Content Policy Violation'}
                   </p>
                 </td>
 
                 {/* Status */}
                 <td className="px-4 py-4">
-                  {removed ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                      <CheckCircle2 className="w-3 h-3" /> Removed
+                  {isCompleted ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>Completed</span>
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-purple-500/10 border border-purple-500/20 px-2.5 py-1 text-xs font-semibold text-purple-600 dark:text-purple-400">
-                      <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" /> Pending
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-500/10 border border-purple-500/20 px-3 py-1 text-xs font-semibold text-purple-600 dark:text-purple-400">
+                      <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
+                      <span>Pending Removal</span>
                     </span>
                   )}
                 </td>
@@ -120,15 +142,15 @@ export const ReviewsTable: React.FC<ReviewsTableProps> = ({ reviews, onMarkRemov
                 {/* Description */}
                 <td className="px-4 py-4">
                   <div className="flex items-start gap-2">
-                    <p className="text-xs leading-relaxed text-slate-700 dark:text-zinc-300 line-clamp-3 flex-1">
+                    <p className="text-xs leading-relaxed text-slate-700 dark:text-zinc-300 line-clamp-3 flex-1 font-mono text-[11px]">
                       {reason}
                     </p>
                     {reason && (
                       <button
                         onClick={() => handleCopy(reason, r.id)}
-                        className="shrink-0 p-1.5 rounded-md text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-zinc-800"
-                        title="Copy description"
-                        aria-label="Copy description"
+                        className="shrink-0 p-1.5 rounded-md text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+                        title="Copy Justification"
+                        aria-label="Copy Justification"
                       >
                         {copiedId === r.id ? (
                           <Check className="w-4 h-4 text-emerald-500" />
@@ -145,16 +167,33 @@ export const ReviewsTable: React.FC<ReviewsTableProps> = ({ reviews, onMarkRemov
                   <div className="flex flex-col items-end gap-2">
                     <button
                       onClick={() => handleOpen(r.googleReviewUrl || '', r.analysis?.generatedReportReason || '')}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 px-3 py-1.5 text-xs font-semibold text-white"
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 dark:bg-zinc-800 hover:bg-slate-800 dark:hover:bg-zinc-700 px-3 py-1.5 text-xs font-semibold text-white transition-all shadow-sm"
                     >
-                      <ExternalLink className="w-3.5 h-3.5" /> Open on Google
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      <span>{isCompleted ? 'Verify Removal' : 'Open on Google'}</span>
                     </button>
-                    {onMarkRemoved && !removed && (
+
+                    {/* Mark Completed (for Active items) */}
+                    {onMarkRemoved && !isCompleted && (
                       <button
                         onClick={() => onMarkRemoved(r.id)}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 px-3 py-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400"
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 px-3 py-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400 transition-all cursor-pointer"
+                        title="Mark as removed from Google and move to Completed list"
                       >
-                        <CheckCircle2 className="w-3.5 h-3.5" /> Mark Removed
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>Mark Completed</span>
+                      </button>
+                    )}
+
+                    {/* Reopen to Active (for Completed items) */}
+                    {onReopen && isCompleted && (
+                      <button
+                        onClick={() => onReopen(r.id)}
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/20 px-3 py-1.5 text-xs font-semibold text-purple-600 dark:text-purple-400 transition-all cursor-pointer"
+                        title="Move back to Active / In-Review flags"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        <span>Reopen to Active</span>
                       </button>
                     )}
                   </div>
