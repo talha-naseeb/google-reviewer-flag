@@ -7,6 +7,8 @@ import { useTheme } from './ThemeProvider';
 import {
   Sun,
   Moon,
+  Monitor,
+  Check,
   PanelLeftClose,
   PanelLeftOpen,
   Menu,
@@ -33,9 +35,21 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleMobileDrawer
 }) => {
   const pathname = usePathname();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, resolvedTheme, setTheme, toggleTheme } = useTheme();
   const [isQuickMenuOpen, setIsQuickMenuOpen] = useState(false);
+  const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
+  const [userInitial, setUserInitial] = useState('A');
   const quickMenuRef = useRef<HTMLDivElement>(null);
+  const themeMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const name = localStorage.getItem('userName');
+      const email = localStorage.getItem('userEmail');
+      const initial = (name || email || 'A').charAt(0).toUpperCase();
+      setUserInitial(initial);
+    }
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -47,20 +61,23 @@ export const Header: React.FC<HeaderProps> = ({
     window.location.href = '/login';
   };
 
-  // Close quick menu when clicking outside
+  // Close menus when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (quickMenuRef.current && !quickMenuRef.current.contains(event.target as Node)) {
         setIsQuickMenuOpen(false);
       }
+      if (themeMenuRef.current && !themeMenuRef.current.contains(event.target as Node)) {
+        setIsThemeMenuOpen(false);
+      }
     };
-    if (isQuickMenuOpen) {
+    if (isQuickMenuOpen || isThemeMenuOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isQuickMenuOpen]);
+  }, [isQuickMenuOpen, isThemeMenuOpen]);
 
   // Hide header on login page
   if (pathname === '/login') return null;
@@ -244,32 +261,129 @@ export const Header: React.FC<HeaderProps> = ({
 
         <div className="h-5 w-px bg-slate-200 dark:bg-zinc-800 shrink-0" />
 
-        {/* Theme Mode Toggle (Sun/Moon) */}
-        <button
-          onClick={toggleTheme}
-          className="p-2 sm:px-2.5 sm:py-2 rounded-xl bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700/70 text-slate-700 dark:text-zinc-200 hover:bg-slate-200 dark:hover:bg-zinc-700 transition-all flex items-center gap-1.5 text-xs font-semibold shadow-sm shrink-0"
-          title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
-          aria-label={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
-        >
-          {theme === 'dark' ? (
-            <>
-              <Sun className="w-4 h-4 text-amber-400 shrink-0" />
-              <span className="hidden 2xl:inline text-[11px] text-amber-300">Light</span>
-            </>
-          ) : (
-            <>
-              <Moon className="w-4 h-4 text-indigo-600 shrink-0" />
-              <span className="hidden 2xl:inline text-[11px] text-indigo-600">Dark</span>
-            </>
-          )}
-        </button>
+        {/* Theme Selector (System Auto / Light / Dark) */}
+        <div className="relative" ref={themeMenuRef}>
+          <button
+            onClick={() => setIsThemeMenuOpen(!isThemeMenuOpen)}
+            className={`p-2 sm:px-2.5 sm:py-2 rounded-xl border transition-all flex items-center gap-1.5 text-xs font-semibold shadow-sm shrink-0 ${
+              isThemeMenuOpen
+                ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-300 dark:border-rose-900/60 text-rose-600 dark:text-rose-400'
+                : 'bg-slate-100 dark:bg-zinc-800/80 border-slate-200 dark:border-zinc-700/70 text-slate-700 dark:text-zinc-200 hover:bg-slate-200 dark:hover:bg-zinc-700'
+            }`}
+            title={`Current Theme: ${theme === 'system' ? `System (${resolvedTheme})` : theme}. Click to customize.`}
+            aria-label="Theme Mode Selection"
+            aria-expanded={isThemeMenuOpen}
+          >
+            {theme === 'system' ? (
+              <>
+                <Monitor className="w-4 h-4 text-sky-500 shrink-0" />
+                <span className="hidden xl:inline text-[11px] text-slate-600 dark:text-zinc-300">
+                  Auto ({resolvedTheme})
+                </span>
+              </>
+            ) : theme === 'dark' ? (
+              <>
+                <Moon className="w-4 h-4 text-indigo-400 shrink-0" />
+                <span className="hidden xl:inline text-[11px] text-indigo-300">Dark</span>
+              </>
+            ) : (
+              <>
+                <Sun className="w-4 h-4 text-amber-500 shrink-0" />
+                <span className="hidden xl:inline text-[11px] text-amber-600">Light</span>
+              </>
+            )}
+            <ChevronDown
+              className={`w-3.5 h-3.5 text-slate-400 dark:text-zinc-500 transition-transform duration-200 ${
+                isThemeMenuOpen ? 'rotate-180' : ''
+              }`}
+            />
+          </button>
 
-        {/* Admin Avatar */}
+          {/* Theme Dropdown Menu */}
+          {isThemeMenuOpen && (
+            <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-zinc-900 rounded-2xl shadow-xl border border-slate-200 dark:border-zinc-800 p-1.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500 px-2.5 py-1">
+                Appearance
+              </div>
+              <div className="space-y-0.5">
+                {/* System Auto option */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTheme('system');
+                    setIsThemeMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-medium transition-all ${
+                    theme === 'system'
+                      ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 font-semibold'
+                      : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800'
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <Monitor className="w-4 h-4 text-sky-500 shrink-0" />
+                    <span>System Default</span>
+                  </span>
+                  {theme === 'system' && <Check className="w-3.5 h-3.5 text-rose-500 shrink-0" />}
+                </button>
+
+                {/* Light option */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTheme('light');
+                    setIsThemeMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-medium transition-all ${
+                    theme === 'light'
+                      ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 font-semibold'
+                      : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800'
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <Sun className="w-4 h-4 text-amber-500 shrink-0" />
+                    <span>Light Mode</span>
+                  </span>
+                  {theme === 'light' && <Check className="w-3.5 h-3.5 text-rose-500 shrink-0" />}
+                </button>
+
+                {/* Dark option */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTheme('dark');
+                    setIsThemeMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-medium transition-all ${
+                    theme === 'dark'
+                      ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 font-semibold'
+                      : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800'
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <Moon className="w-4 h-4 text-indigo-400 shrink-0" />
+                    <span>Dark Mode</span>
+                  </span>
+                  {theme === 'dark' && <Check className="w-3.5 h-3.5 text-rose-500 shrink-0" />}
+                </button>
+              </div>
+
+              <div className="border-t border-slate-100 dark:border-zinc-800/80 mt-1 pt-1.5 px-2.5 pb-1">
+                <span className="text-[10px] text-slate-400 dark:text-zinc-500">
+                  {theme === 'system'
+                    ? `Auto-reflecting OS (${resolvedTheme})`
+                    : `Locked to ${theme} mode`}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* User Profile Avatar */}
         <div
           className="w-8 h-8 rounded-full bg-rose-500/10 border border-rose-500/30 flex items-center justify-center font-bold text-xs text-rose-600 dark:text-rose-400 shrink-0"
-          title="Admin Profile"
+          title="User Profile"
         >
-          A
+          {userInitial}
         </div>
 
         {/* Sign Out Button */}
