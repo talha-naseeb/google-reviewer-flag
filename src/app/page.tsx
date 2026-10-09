@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { ReviewsTable } from '@/components/ReviewsTable';
 import { DashboardStats, Review, ModerationStatus } from '@/types/review';
 import {
   LayoutDashboard,
@@ -165,88 +166,7 @@ export default function MainDashboardPage() {
         </div>
 
         {reviews.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse min-w-[750px]">
-              <thead>
-                <tr className="border-b border-slate-200 dark:border-zinc-800/80 text-slate-500 dark:text-zinc-400 font-bold uppercase tracking-wider bg-slate-50/50 dark:bg-zinc-950/40">
-                  <th className="py-3 px-4 rounded-l-lg">Reviewer</th>
-                  <th className="py-3 px-4">Rating</th>
-                  <th className="py-3 px-4">Policy Rule</th>
-                  <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4">AI Removal Description</th>
-                  <th className="py-3 px-4 text-right rounded-r-lg">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-zinc-800/60 text-slate-800 dark:text-zinc-300">
-                {reviews.map((r) => {
-                  const rule = r.analysis?.primaryViolation;
-
-                  return (
-                    <tr key={r.id} className="hover:bg-slate-50/80 dark:hover:bg-zinc-800/40 transition-colors">
-                      <td className="py-3.5 px-4 font-semibold text-slate-900 dark:text-zinc-200">
-                        {r.reviewerName}
-                        <span className="block text-[11px] text-slate-400 dark:text-zinc-500 font-normal">{r.datePosted}</span>
-                      </td>
-                      <td className="py-3.5 px-4 text-amber-500 font-bold">{r.rating}★</td>
-                      <td className="py-3.5 px-4">
-                        <span className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 text-[11px] font-semibold px-2.5 py-1 rounded-md inline-block max-w-[200px] truncate">
-                          Rule #{rule?.ruleNumber || 1}: {rule?.ruleTitle || 'Content Policy'}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4">
-                        {r.status === 'REMOVED' ? (
-                          <span className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 text-[11px] font-semibold px-2.5 py-1 rounded-md">
-                            Removed by Google
-                          </span>
-                        ) : (
-                          <span className="bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 text-[11px] font-semibold px-2.5 py-1 rounded-md">
-                            Pending Google Review
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3.5 px-4 max-w-xs">
-                        <div className="flex items-center gap-2">
-                          <span className="truncate font-mono text-[11px] text-slate-700 dark:text-zinc-300 bg-slate-100 dark:bg-zinc-950 px-2.5 py-1 rounded border border-slate-200 dark:border-zinc-800">
-                            {r.analysis?.generatedReportReason || r.comment}
-                          </span>
-                          {r.analysis?.generatedReportReason && (
-                            <button
-                              onClick={() => handleCopyReason(r.analysis!.generatedReportReason, r.id)}
-                              className="shrink-0 p-1 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors"
-                              title="Copy Description"
-                            >
-                              {copiedId === r.id ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                      <td className="py-3.5 px-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => handleOpenGoogleLink(r.googleReviewUrl || '', r.analysis?.generatedReportReason || '')}
-                            className="bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 text-[11px] px-3 py-1.5 rounded-lg flex items-center gap-1 border border-slate-200 dark:border-zinc-700/80 transition-colors"
-                            title="Open Google Maps Review"
-                          >
-                            <ExternalLink className="w-3 h-3 text-rose-500" />
-                            <span>Link</span>
-                          </button>
-
-                          {r.status !== 'REMOVED' && (
-                            <button
-                              onClick={() => handleUpdateStatus(r.id, 'REMOVED')}
-                              className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[11px] px-3 py-1.5 rounded-lg border border-emerald-500/30 transition-colors font-semibold"
-                            >
-                              Mark Removed
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <ReviewsTable reviews={reviews} onMarkRemoved={(id) => handleUpdateStatus(id, 'REMOVED')} />
         ) : (
           <div className="text-center py-10 text-xs text-slate-500 dark:text-zinc-400 space-y-3 bg-slate-50 dark:bg-zinc-950/40 rounded-2xl border border-slate-200 dark:border-zinc-800/60">
             <p className="text-slate-600 dark:text-zinc-400 font-medium">No flagged review submissions recorded yet.</p>
