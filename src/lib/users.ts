@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { Collection } from 'mongodb';
 import { getDb } from './mongodb';
 import { sendNewUserInvitationEmail } from './email';
@@ -36,12 +37,6 @@ export async function ensureDefaultAdminUser(): Promise<SafeUser> {
       email: 'admin@googlereviewer.com',
       password: 'googlereviewer!123!!admin',
       name: 'Admin Google Reviewer',
-      role: 'admin' as const
-    },
-    {
-      email: 'jafarkhanaj@gmail.com',
-      password: 'googlereviewer!123!!admin',
-      name: 'Jafar Khan',
       role: 'admin' as const
     },
     {
@@ -291,7 +286,9 @@ export async function provisionUserWithTempPassword({
   await ensureDefaultAdminUser();
   const col = await usersCollection();
   const normalizedEmail = email.trim().toLowerCase();
-  const actualTempPassword = tempPassword || `GoogleMod#${Math.floor(1000 + Math.random() * 9000)}!`;
+  const randomHex = crypto.randomBytes(3).toString('hex').toUpperCase();
+  const randomDigits = Math.floor(1000 + Math.random() * 9000);
+  const actualTempPassword = tempPassword || `GoogleMod#${randomHex}${randomDigits}!`;
   const salt = bcrypt.genSaltSync(10);
   const passwordHash = bcrypt.hashSync(actualTempPassword, salt);
 

@@ -29,9 +29,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: `User ${result.email} provisioned successfully.`,
+      message: `User ${result.email} provisioned successfully and credentials dispatched via email.`,
       email: result.email,
-      tempPassword: result.tempPassword,
       emailSent: result.emailResult.success,
       emailError: result.emailResult.error || null
     });
