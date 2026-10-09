@@ -11,9 +11,7 @@ import {
   Settings,
   LogOut,
   ChevronRight,
-  X,
-  PanelLeftClose,
-  PanelLeftOpen
+  X
 } from 'lucide-react';
 
 interface SidebarProps {
