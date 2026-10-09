@@ -17,7 +17,8 @@ import {
   Star,
   Info,
   CheckCircle2,
-  Edit3
+  User,
+  MessageSquare
 } from 'lucide-react';
 
 export default function SingleLinkFlagPage() {
@@ -30,7 +31,7 @@ export default function SingleLinkFlagPage() {
   const [isAutoExtracted, setIsAutoExtracted] = useState(false);
   const [hasResolvedUrl, setHasResolvedUrl] = useState(false);
 
-  // Review Details State (Always Editable)
+  // Review Details State (Read-Only Display)
   const [reviewerName, setReviewerName] = useState('');
   const [rating, setRating] = useState(1);
   const [commentText, setCommentText] = useState('');
@@ -62,21 +63,25 @@ export default function SingleLinkFlagPage() {
         }
         setHasResolvedUrl(true);
 
-        if (details.reviewerName) setReviewerName(details.reviewerName);
-        if (details.rating) setRating(details.rating);
-        if (details.comment) setCommentText(details.comment);
+        const fetchedName = details.reviewerName || 'Google User';
+        const fetchedRating = details.rating || 1;
+        const fetchedComment = details.comment || '';
 
-        if (data.isFetchedFromUrl && details.comment) {
+        setReviewerName(fetchedName);
+        setRating(fetchedRating);
+        setCommentText(fetchedComment);
+
+        if (data.isFetchedFromUrl && fetchedComment) {
           setIsAutoExtracted(true);
-          toast.success('Review Extracted!', `Fetched review by ${details.reviewerName || 'Google User'}`);
-          // Auto-run NVIDIA AI generation
-          runAiGeneration(details.comment, details.reviewerName || 'Google User', details.rating || 1);
+          toast.success('Review Extracted!', `Fetched review from ${fetchedName}`);
+          // Auto-run NVIDIA AI policy generation
+          runAiGeneration(fetchedComment, fetchedName, fetchedRating);
         } else {
           setIsAutoExtracted(false);
-          toast.info(
-            'Link Verified',
-            'Google Maps review link verified. Review and enter comment text below to generate the AI flag justification.'
-          );
+          toast.info('Link Verified', 'Google Maps review link verified.');
+          if (fetchedComment) {
+            runAiGeneration(fetchedComment, fetchedName, fetchedRating);
+          }
         }
       } else {
         toast.warning('Notice', data.error || 'Could not resolve link automatically.');
@@ -90,11 +95,6 @@ export default function SingleLinkFlagPage() {
   };
 
   const runAiGeneration = async (comment: string, name: string, stars: number) => {
-    if (!comment.trim()) {
-      toast.warning('Missing Comment', 'Please enter or paste the review comment text first.');
-      return;
-    }
-
     setIsGenerating(true);
     try {
       const result = await generateNvidiaRemovalDescription(comment, name || 'Google User', stars);
@@ -118,7 +118,7 @@ export default function SingleLinkFlagPage() {
     setIsAutoExtracted(false);
     setAiResult(null);
     setSubmittedSuccess(false);
-    toast.info('Form Reset', 'All input fields cleared.');
+    toast.info('Form Reset', 'Cleared review data.');
   };
 
   // Submit Flag to Backend & Open Google Maps
@@ -180,23 +180,23 @@ export default function SingleLinkFlagPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
-      {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800/80 p-6 rounded-3xl shadow-sm dark:shadow-xl backdrop-blur-md transition-colors">
-        <div>
-          <h2 className="font-bold text-xl sm:text-2xl text-slate-900 dark:text-zinc-100 flex items-center gap-2.5">
-            <Link2 className="w-6 h-6 text-rose-600 dark:text-rose-500" />
-            Single Google Review Link Flagging
+    <div className="space-y-6 max-w-5xl mx-auto px-1 sm:px-0">
+      {/* Header Banner - Responsive */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800/80 p-5 sm:p-6 rounded-2xl sm:rounded-3xl shadow-sm dark:shadow-xl backdrop-blur-md transition-colors">
+        <div className="min-w-0">
+          <h2 className="font-bold text-lg sm:text-2xl text-slate-900 dark:text-zinc-100 flex items-center gap-2.5">
+            <Link2 className="w-5 h-5 sm:w-6 sm:h-6 text-rose-600 dark:text-rose-500 shrink-0" />
+            <span className="truncate">Single Google Review Link Flagging</span>
           </h2>
           <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1">
-            Paste Google Review URL ➔ Verify Link ➔ Enter or Edit Review Text ➔ AI Policy Justification
+            Paste Google Review URL ➔ Live Extraction ➔ AI Policy Justification
           </p>
         </div>
 
-        {(hasResolvedUrl || commentText || reviewerName) && (
+        {hasResolvedUrl && (
           <button
             onClick={handleClearDetails}
-            className="flex items-center gap-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30 text-xs font-semibold px-4 py-2.5 rounded-xl transition-all self-start sm:self-auto"
+            className="flex items-center justify-center gap-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30 text-xs font-semibold px-4 py-2.5 rounded-xl transition-all w-full sm:w-auto shrink-0"
           >
             <Trash2 className="w-4 h-4" />
             <span>Clear Form</span>
@@ -204,16 +204,16 @@ export default function SingleLinkFlagPage() {
         )}
       </div>
 
-      {/* URL Link Input Card */}
-      <div className="bg-white dark:bg-zinc-900/80 border border-slate-200 dark:border-zinc-800/80 rounded-3xl p-6 shadow-sm dark:shadow-xl space-y-4 transition-colors">
+      {/* URL Link Input Card - Responsive */}
+      <div className="bg-white dark:bg-zinc-900/80 border border-slate-200 dark:border-zinc-800/80 rounded-2xl sm:rounded-3xl p-5 sm:p-6 shadow-sm dark:shadow-xl space-y-4 transition-colors">
         <div>
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 mb-2">
             <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider">
               Google Review URL / Shortlink:
             </label>
             {hasResolvedUrl && (
               <span
-                className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full border ${
+                className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full border self-start sm:self-auto ${
                   isAutoExtracted
                     ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
                     : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20'
@@ -224,8 +224,8 @@ export default function SingleLinkFlagPage() {
             )}
           </div>
           <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
-              <Link2 className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-rose-500 pointer-events-none" />
+            <div className="relative flex-1 min-w-0">
+              <Link2 className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-rose-500 pointer-events-none shrink-0" />
               <input
                 type="text"
                 value={urlInput}
@@ -236,192 +236,167 @@ export default function SingleLinkFlagPage() {
                   }
                 }}
                 placeholder="https://maps.app.goo.gl/... or https://www.google.com/maps/reviews/..."
-                className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-300 dark:border-zinc-800 text-slate-900 dark:text-zinc-200 text-xs rounded-xl pl-10 pr-4 py-3.5 focus:outline-none focus:border-rose-500 font-mono transition-colors shadow-inner"
+                className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-300 dark:border-zinc-800 text-slate-900 dark:text-zinc-200 text-xs rounded-xl pl-10 pr-4 py-3.5 focus:outline-none focus:border-rose-500 font-mono transition-colors shadow-inner truncate"
               />
             </div>
             <button
               onClick={() => handleAutoFetch(urlInput)}
               disabled={isFetchingUrl || !urlInput.trim()}
-              className="bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs px-6 py-3.5 rounded-xl shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2 shrink-0"
+              className="w-full sm:w-auto bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs px-6 py-3.5 rounded-xl shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2 shrink-0"
             >
               <RefreshCw className={`w-4 h-4 ${isFetchingUrl ? 'animate-spin' : ''}`} />
               <span>{isFetchingUrl ? 'Resolving...' : 'Fetch / Verify Link'}</span>
             </button>
           </div>
         </div>
-        <p className="text-[11px] text-slate-500 dark:text-zinc-400 flex items-center gap-1.5">
-          <Info className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-          <span>
-            Accepts any Google Maps shortlink (maps.app.goo.gl) or full maps review URL. Automatically expands and verifies the link.
+        <p className="text-[11px] text-slate-500 dark:text-zinc-400 flex items-start sm:items-center gap-1.5">
+          <Info className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5 sm:mt-0" />
+          <span className="leading-relaxed">
+            Accepts any Google Maps shortlink (maps.app.goo.gl) or full review URL. Automatically resolves and extracts review content.
           </span>
         </p>
       </div>
 
-      {/* Editable Review Details Card */}
-      <div className="bg-white dark:bg-zinc-900/90 border border-slate-200 dark:border-zinc-800/90 rounded-3xl p-6 sm:p-8 shadow-sm dark:shadow-2xl space-y-6 transition-colors">
-        <div className="flex items-center justify-between border-b border-slate-200 dark:border-zinc-800/80 pb-4">
-          <h3 className="font-bold text-slate-900 dark:text-zinc-100 text-base flex items-center gap-2">
-            <Edit3 className="w-5 h-5 text-rose-500" />
-            <span>Reviewer Details & Comment (Editable)</span>
-          </h3>
-          <span className="text-[11px] text-slate-500 dark:text-zinc-400">
-            {isAutoExtracted ? 'Pre-filled from link' : 'Review & customize fields'}
-          </span>
-        </div>
+      {/* Review Details & Comment Card (Read-Only Showcase) */}
+      {hasResolvedUrl ? (
+        <div className="bg-white dark:bg-zinc-900/90 border border-slate-200 dark:border-zinc-800/90 rounded-2xl sm:rounded-3xl p-5 sm:p-8 shadow-sm dark:shadow-2xl space-y-6 transition-colors animate-in fade-in duration-200">
+          {/* Card Title & Reviewer Profile Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-zinc-800/80 pb-5">
+            <div className="flex items-center gap-3.5 min-w-0">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-rose-600 to-amber-500 text-white flex items-center justify-center font-bold text-lg shadow-md shrink-0">
+                {(reviewerName || 'G').charAt(0).toUpperCase()}
+              </div>
+              <div className="min-w-0">
+                <h3 className="font-bold text-slate-900 dark:text-zinc-100 text-base sm:text-lg truncate">
+                  {reviewerName || 'Google User'}
+                </h3>
+                <div className="flex flex-wrap items-center gap-2 mt-1">
+                  {/* Stars Display */}
+                  <div className="flex items-center gap-0.5" aria-label={`${rating} out of 5 stars`}>
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <Star
+                        key={s}
+                        className={`w-3.5 h-3.5 ${
+                          s <= rating
+                            ? 'fill-amber-400 text-amber-400'
+                            : 'text-slate-300 dark:text-zinc-700'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+                    {rating} / 5 Stars
+                  </span>
+                  <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                    ✓ Verified Google Review
+                  </span>
+                </div>
+              </div>
+            </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {/* Reviewer Name */}
-          <div className="sm:col-span-2 space-y-1.5">
-            <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider block">
-              Reviewer Name:
-            </label>
-            <input
-              type="text"
-              value={reviewerName}
-              onChange={(e) => setReviewerName(e.target.value)}
-              placeholder="e.g. John Doe or Google User"
-              className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-zinc-200 text-xs rounded-xl px-4 py-3 focus:outline-none focus:border-rose-500 transition-colors"
-            />
+            <button
+              onClick={() => runAiGeneration(commentText, reviewerName, rating)}
+              disabled={isGenerating}
+              className="flex items-center justify-center gap-1.5 text-xs text-rose-600 dark:text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 px-3.5 py-2 rounded-xl border border-rose-500/30 transition-colors font-semibold self-start sm:self-auto w-full sm:w-auto shrink-0"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isGenerating ? 'animate-spin' : ''}`} />
+              <span>{isGenerating ? 'Analyzing...' : 'Regenerate AI Analysis'}</span>
+            </button>
           </div>
 
-          {/* Rating (Interactive 1-5 Star Selector) */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider block">
-              Star Rating:
-            </label>
-            <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-xl px-3 py-2.5">
-              {[1, 2, 3, 4, 5].map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => setRating(s)}
-                  className="p-1 rounded hover:scale-110 transition-transform"
-                  title={`${s} Star${s > 1 ? 's' : ''}`}
-                >
-                  <Star
-                    className={`w-5 h-5 ${
-                      s <= rating
-                        ? 'fill-amber-400 text-amber-400'
-                        : 'text-slate-300 dark:text-zinc-700'
-                    }`}
-                  />
-                </button>
-              ))}
-              <span className="text-xs font-bold text-amber-600 dark:text-amber-400 ml-1">
-                {rating} / 5
+          {/* Fetched Review Comment Box (Read-Only) */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
+                <MessageSquare className="w-3.5 h-3.5 text-rose-500" />
+                <span>Extracted Review Comment:</span>
+              </label>
+              <span className="text-[11px] text-slate-500 dark:text-zinc-400">
+                {commentText.length} characters
               </span>
             </div>
+            <div className="bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800/80 p-4 sm:p-5 rounded-2xl">
+              <p className="text-xs sm:text-sm text-slate-800 dark:text-zinc-200 leading-relaxed italic break-words">
+                "{commentText || 'Review rating submitted without written comment.'}"
+              </p>
+            </div>
           </div>
-        </div>
 
-        {/* Review Comment Textarea */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider">
-              Review Comment Text:
-            </label>
-            <span className="text-[11px] text-slate-500 dark:text-zinc-400">
-              {commentText.length} characters
-            </span>
+          {/* Generated NVIDIA AI Removal Description Box */}
+          {aiResult && (
+            <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-zinc-800/80 animate-in fade-in duration-200">
+              <div className="bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/40 rounded-2xl p-4 sm:p-5 space-y-3.5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-rose-200 dark:border-rose-900/30 pb-3">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <AlertTriangle className="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0" />
+                    <h4 className="font-bold text-rose-800 dark:text-rose-300 text-xs sm:text-sm truncate">
+                      Rule #{aiResult.ruleNumber}: {aiResult.policyRuleTitle}
+                    </h4>
+                  </div>
+                  <span className="bg-rose-600/10 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 text-[11px] font-bold px-3 py-1 rounded-full border border-rose-500/30 self-start sm:self-auto shrink-0">
+                    NVIDIA AI Policy Match
+                  </span>
+                </div>
+
+                <div>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                    <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider">
+                      Generated Google Removal Description:
+                    </label>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(aiResult.generatedReason);
+                        setCopied(true);
+                        toast.info('Copied!', 'AI removal description copied to clipboard');
+                        setTimeout(() => setCopied(false), 2000);
+                      }}
+                      className="flex items-center justify-center gap-1.5 text-xs text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 bg-rose-500/10 px-3 py-1 rounded-lg border border-rose-500/30 transition-colors font-semibold self-start sm:self-auto"
+                    >
+                      {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copied ? 'Copied!' : 'Copy Description'}</span>
+                    </button>
+                  </div>
+
+                  <div className="bg-slate-100 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 p-3.5 sm:p-4 rounded-xl text-xs font-mono text-slate-900 dark:text-zinc-200 leading-relaxed break-words whitespace-pre-wrap select-all">
+                    {aiResult.generatedReason}
+                  </div>
+                </div>
+              </div>
+
+              {/* 1-Click Copy & Flag Action Button - Fully Responsive */}
+              <button
+                onClick={handleOpenAndFlagOnGoogle}
+                className="w-full flex flex-col sm:flex-row items-center justify-center gap-2 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white font-semibold text-xs sm:text-sm py-3.5 sm:py-4 px-4 rounded-2xl shadow-xl shadow-rose-950/20 transition-all cursor-pointer text-center"
+              >
+                <div className="flex items-center gap-2">
+                  <ExternalLink className="w-4 h-4 shrink-0" />
+                  <span>1-Click Copy Description, Log Flag & Open Google Maps</span>
+                </div>
+              </button>
+
+              {submittedSuccess && (
+                <div className="text-xs text-center text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-500/10 p-3 rounded-xl border border-emerald-500/20 flex items-center justify-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
+                  <span>Flag submission recorded to MongoDB database! Check Dashboard for live stats.</span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Empty State Placeholder Before Pasting URL */
+        <div className="bg-white dark:bg-zinc-900/60 border border-dashed border-slate-300 dark:border-zinc-800/80 rounded-2xl sm:rounded-3xl p-8 sm:p-12 text-center text-slate-500 dark:text-zinc-400 space-y-3 transition-colors">
+          <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-zinc-800/80 border border-slate-200 dark:border-zinc-700/60 flex items-center justify-center mx-auto text-rose-500">
+            <Link2 className="w-6 h-6" />
           </div>
-          <textarea
-            value={commentText}
-            onChange={(e) => setCommentText(e.target.value)}
-            rows={4}
-            placeholder="Paste or edit the exact review comment text here..."
-            className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-zinc-200 text-xs rounded-xl p-4 focus:outline-none focus:border-rose-500 leading-relaxed transition-colors font-sans"
-          />
-          <p className="text-[11px] text-slate-500 dark:text-zinc-400">
-            NVIDIA AI analyzes this text against all 10 official Google Maps Prohibited Content policies to find the exact violation rule.
+          <h3 className="font-bold text-sm sm:text-base text-slate-800 dark:text-zinc-200">
+            Ready to Flag a Review
+          </h3>
+          <p className="text-xs max-w-md mx-auto text-slate-500 dark:text-zinc-400 leading-relaxed">
+            Paste any Google Review link (including shortlinks like <code className="bg-slate-100 dark:bg-zinc-800 px-1 py-0.5 rounded text-[11px] font-mono">maps.app.goo.gl/...</code>) in the box above to extract the reviewer profile, comment, and AI removal description.
           </p>
         </div>
-
-        {/* Trigger AI Generation Button */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-slate-200 dark:border-zinc-800/80">
-          <span className="text-xs text-slate-500 dark:text-zinc-400">
-            {commentText.trim()
-              ? 'Ready to generate AI policy justification'
-              : 'Enter review comment above to generate justification'}
-          </span>
-          <button
-            onClick={() => runAiGeneration(commentText, reviewerName, rating)}
-            disabled={isGenerating || !commentText.trim()}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs px-6 py-3 rounded-xl shadow-lg transition-all disabled:opacity-50"
-          >
-            {isGenerating ? (
-              <RefreshCw className="w-4 h-4 animate-spin" />
-            ) : (
-              <Sparkles className="w-4 h-4 text-amber-300" />
-            )}
-            <span>
-              {isGenerating
-                ? 'Analyzing with NVIDIA AI...'
-                : aiResult
-                ? 'Regenerate Policy Justification'
-                : 'Generate AI Removal Description'}
-            </span>
-          </button>
-        </div>
-
-        {/* Generated NVIDIA AI Removal Description Box */}
-        {aiResult && (
-          <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-zinc-800/80 animate-in fade-in duration-200">
-            <div className="bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/40 rounded-2xl p-5 space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-rose-200 dark:border-rose-900/30 pb-3">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0" />
-                  <h4 className="font-bold text-rose-800 dark:text-rose-300 text-sm sm:text-base">
-                    Rule #{aiResult.ruleNumber}: {aiResult.policyRuleTitle}
-                  </h4>
-                </div>
-                <span className="bg-rose-600/10 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 text-[11px] font-bold px-3 py-1 rounded-full border border-rose-500/30 self-start sm:self-auto">
-                  NVIDIA AI Policy Match
-                </span>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider">
-                    Generated Google Removal Description:
-                  </label>
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(aiResult.generatedReason);
-                      setCopied(true);
-                      toast.info('Copied!', 'AI removal description copied to clipboard');
-                      setTimeout(() => setCopied(false), 2000);
-                    }}
-                    className="flex items-center gap-1.5 text-xs text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 bg-rose-500/10 px-3 py-1 rounded-lg border border-rose-500/30 transition-colors font-semibold"
-                  >
-                    {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{copied ? 'Copied!' : 'Copy Description'}</span>
-                  </button>
-                </div>
-
-                <div className="bg-slate-100 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 p-4 rounded-xl text-xs font-mono text-slate-900 dark:text-zinc-200 leading-relaxed select-all">
-                  {aiResult.generatedReason}
-                </div>
-              </div>
-            </div>
-
-            {/* 1-Click Copy & Flag Action Button */}
-            <button
-              onClick={handleOpenAndFlagOnGoogle}
-              className="w-full flex items-center justify-center gap-2.5 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white font-semibold text-sm py-4 rounded-2xl shadow-xl shadow-rose-950/20 transition-all cursor-pointer"
-            >
-              <ExternalLink className="w-4 h-4" />
-              <span>1-Click Copy Description, Log Flag & Open Google Maps</span>
-            </button>
-
-            {submittedSuccess && (
-              <div className="text-xs text-center text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-500/10 p-3 rounded-xl border border-emerald-500/20 flex items-center justify-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                <span>Flag submission recorded to MongoDB database! Check Dashboard for live stats.</span>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }
