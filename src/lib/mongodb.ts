@@ -2,7 +2,7 @@ import { MongoClient, Db } from 'mongodb';
 
 const configuredUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017';
 const localUri = 'mongodb://127.0.0.1:27017';
-const dbName = process.env.MONGODB_DB || 'google_flag_reviews';
+const dbName = process.env.MONGODB_DB || (configuredUri.includes('mongodb.net') ? 'Links' : 'google_flag_reviews');
 
 const globalForMongo = globalThis as unknown as {
   _mongoClientPromise?: Promise<MongoClient>;
