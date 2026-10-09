@@ -24,7 +24,7 @@ export default function ForgotPasswordPage() {
   const { toast } = useToast();
 
   const [step, setStep] = useState<'REQUEST_CODE' | 'RESET_PASSWORD' | 'COMPLETED'>('REQUEST_CODE');
-  const [email, setEmail] = useState('admin@googlereviewer.com');
+  const [email, setEmail] = useState('');
   const [resetCode, setResetCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -180,7 +180,7 @@ export default function ForgotPasswordPage() {
                   disabled={isLoading}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@googlereviewer.com"
+                  placeholder="name@example.com"
                   className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-zinc-200 text-sm rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:border-rose-500 transition-colors"
                 />
               </div>

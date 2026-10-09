@@ -4,14 +4,24 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ToastProvider';
-import { ShieldAlert, Lock, Mail, ArrowRight, AlertCircle, Loader2, CheckCircle2 } from 'lucide-react';
+import {
+  ShieldAlert,
+  Lock,
+  Mail,
+  ArrowRight,
+  AlertCircle,
+  Loader2,
+  Eye,
+  EyeOff
+} from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
 
-  const [email, setEmail] = useState('admin@googlereviewer.com');
-  const [password, setPassword] = useState('googlereviewer!123!!admin');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -69,7 +79,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 flex items-center justify-center p-4 selection:bg-rose-500 selection:text-white transition-colors">
-      <div className="bg-white dark:bg-zinc-900/90 border border-slate-200 dark:border-zinc-800/90 rounded-3xl p-8 max-w-md w-full shadow-lg dark:shadow-2xl space-y-6 backdrop-blur-md">
+      <div className="bg-white dark:bg-zinc-900/90 border border-slate-200 dark:border-zinc-800/90 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-lg dark:shadow-2xl space-y-6 backdrop-blur-md">
         {/* Header Logo */}
         <div className="text-center space-y-2">
           <div className="inline-flex bg-gradient-to-tr from-rose-600 to-amber-500 p-3.5 rounded-2xl shadow-xl shadow-rose-950/20 mb-2">
@@ -112,7 +122,7 @@ export default function LoginPage() {
                 disabled={isLoading}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@googlereviewer.com"
+                placeholder="name@example.com"
                 className={`w-full bg-slate-50 dark:bg-zinc-950 border text-slate-900 dark:text-zinc-200 text-sm rounded-xl pl-10 pr-4 py-3 focus:outline-none transition-colors ${
                   email.length > 0 && !isEmailValid
                     ? 'border-rose-400 focus:border-rose-500'
@@ -140,16 +150,23 @@ export default function LoginPage() {
             <div className="relative">
               <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-400" />
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 required
                 disabled={isLoading}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className={`w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-zinc-200 text-sm rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:border-rose-500 transition-colors ${
+                placeholder="Enter your password"
+                className={`w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-zinc-200 text-sm rounded-xl pl-10 pr-10 py-3 focus:outline-none focus:border-rose-500 transition-colors ${
                   isLoading ? 'opacity-70 cursor-not-allowed' : ''
                 }`}
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
             <div className="flex items-center justify-end mt-1.5">
               <Link
@@ -189,9 +206,8 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div className="border-t border-slate-200 dark:border-zinc-800/80 pt-4 text-center text-xs text-slate-500 dark:text-zinc-400 space-y-1">
-          <p className="font-semibold text-slate-700 dark:text-zinc-300">Default Authorized Accounts</p>
-          <p className="text-[11px] font-mono text-slate-500 dark:text-zinc-400">jafarkhanaj@gmail.com • admin@googlereviewer.com</p>
+        <div className="border-t border-slate-200 dark:border-zinc-800/80 pt-4 text-center text-xs text-slate-500 dark:text-zinc-400">
+          <p className="text-[11px] text-slate-400 dark:text-zinc-500">Authorized personnel only • Google Content Moderation Suite</p>
         </div>
       </div>
     </div>
