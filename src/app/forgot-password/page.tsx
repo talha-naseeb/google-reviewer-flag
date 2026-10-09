@@ -58,18 +58,9 @@ export default function ForgotPasswordPage() {
       const data = await res.json();
 
       if (data.success) {
-        if (data.emailSent) {
-          toast.success('Email Sent!', `6-digit reset code delivered to ${email}`);
-          setInfoMessage(`We sent a 6-digit verification code to ${email}. Check your inbox.`);
-        } else {
-          toast.success('Code Generated!', `6-digit reset code generated for ${email}`);
-          if (data.resetCode) {
-            setResetCode(data.resetCode);
-            setInfoMessage(`Verification code generated (Dev Auto-fill: ${data.resetCode})`);
-          } else {
-            setInfoMessage(`We dispatched a 6-digit verification code to ${email}.`);
-          }
-        }
+        setResetCode(''); // Keep field empty so user types the code received via email
+        toast.success('Email Sent!', `6-digit verification code delivered to ${email}`);
+        setInfoMessage(`We've sent a 6-digit verification code to ${email}. Please check your inbox (or spam) and enter it below.`);
         setStep('RESET_PASSWORD');
       } else {
         const msg = data.error || 'Failed to request reset code. Please check email.';
@@ -236,7 +227,7 @@ export default function ForgotPasswordPage() {
                   disabled={isLoading}
                   value={resetCode}
                   onChange={(e) => setResetCode(e.target.value.replace(/\D/g, ''))}
-                  placeholder="123456"
+                  placeholder="Enter 6-digit code"
                   className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-zinc-200 text-sm font-mono tracking-widest rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:border-rose-500 transition-colors"
                 />
               </div>

@@ -35,21 +35,22 @@ export async function POST(request: Request) {
       expiresInMinutes: 15
     });
 
-    const isApiKeyConfigured = Boolean(
-      process.env.RESEND_API_KEY && process.env.RESEND_API_KEY !== 're_xxxxxxxxx'
-    );
+    if (!emailResult.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: emailResult.error || 'Failed to send verification email. Please check your email configuration.'
+        },
+        { status: 502 }
+      );
+    }
 
+    // Never return the resetCode in the API response - it must be retrieved from the user's email
     return NextResponse.json({
       success: true,
-      message: emailResult.success
-        ? `A 6-digit verification code has been dispatched to ${result.user.email}.`
-        : 'Password reset code generated.',
+      message: `A 6-digit verification code has been dispatched to ${result.user.email}.`,
       email: result.user.email,
-      emailSent: emailResult.success,
-      emailError: emailResult.error || null,
-      // Provide fallback resetCode for seamless testing if Resend key is not yet configured
-      resetCode: isApiKeyConfigured && emailResult.success ? undefined : result.resetCode,
-      expiresAt: result.expiresAt
+      emailSent: true
     });
   } catch (error: any) {
     console.error('Forgot password error:', error);
