@@ -9,7 +9,6 @@ import {
   Lock,
   Mail,
   ArrowRight,
-  AlertCircle,
   Loader2,
   Eye,
   EyeOff
@@ -23,19 +22,27 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Client-side validations
+  // Validations
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   const isPasswordValid = password.trim().length >= 6;
-  const isFormValid = isEmailValid && isPasswordValid;
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isFormValid || isLoading) return;
+
+    if (!isEmailValid) {
+      toast.error('Invalid Email', 'Please enter a valid email address.');
+      return;
+    }
+
+    if (!isPasswordValid) {
+      toast.error('Invalid Password', 'Password must be at least 6 characters.');
+      return;
+    }
+
+    if (isLoading) return;
 
     setIsLoading(true);
-    setErrorMessage(null);
 
     try {
       const res = await fetch('/api/auth/login', {
@@ -65,12 +72,10 @@ export default function LoginPage() {
         }, 600);
       } else {
         const msg = data.error || 'Authentication failed. Please check your credentials.';
-        setErrorMessage(msg);
         toast.error('Authentication Failed', msg);
       }
     } catch (err: any) {
       const msg = err.message || 'Network error occurred. Please try again.';
-      setErrorMessage(msg);
       toast.error('Network Error', msg);
     } finally {
       setIsLoading(false);
@@ -89,31 +94,12 @@ export default function LoginPage() {
           <p className="text-xs text-slate-500 dark:text-zinc-400">Google Review Link Auto-Fetcher & Flagging System</p>
         </div>
 
-        {/* Error message banner */}
-        {errorMessage && (
-          <div className="flex items-center gap-2 p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-600 dark:text-rose-400 text-xs font-semibold animate-in fade-in duration-150">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{errorMessage}</span>
-          </div>
-        )}
-
         {/* Login Form */}
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider">
-                Email Address
-              </label>
-              {email.length > 0 && (
-                <span
-                  className={`text-[11px] font-medium ${
-                    isEmailValid ? 'text-emerald-500' : 'text-rose-500'
-                  }`}
-                >
-                  {isEmailValid ? '✓ Valid email' : 'Invalid email format'}
-                </span>
-              )}
-            </div>
+            <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider mb-1.5">
+              Email Address
+            </label>
             <div className="relative">
               <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-400" />
               <input
@@ -123,30 +109,17 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@example.com"
-                className={`w-full bg-slate-50 dark:bg-zinc-950 border text-slate-900 dark:text-zinc-200 text-sm rounded-xl pl-10 pr-4 py-3 focus:outline-none transition-colors ${
-                  email.length > 0 && !isEmailValid
-                    ? 'border-rose-400 focus:border-rose-500'
-                    : 'border-slate-200 dark:border-zinc-800 focus:border-rose-500'
-                } ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                className={`w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-zinc-200 text-sm rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:border-rose-500 transition-colors ${
+                  isLoading ? 'opacity-70 cursor-not-allowed' : ''
+                }`}
               />
             </div>
           </div>
 
           <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider">
-                Password
-              </label>
-              {password.length > 0 && (
-                <span
-                  className={`text-[11px] font-medium ${
-                    isPasswordValid ? 'text-emerald-500' : 'text-amber-500'
-                  }`}
-                >
-                  {isPasswordValid ? '✓ Sufficient length' : 'Min 6 characters'}
-                </span>
-              )}
-            </div>
+            <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider mb-1.5">
+              Password
+            </label>
             <div className="relative">
               <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-400" />
               <input
@@ -171,35 +144,26 @@ export default function LoginPage() {
             <div className="flex items-center justify-end mt-1.5">
               <Link
                 href="/forgot-password"
-                className="text-xs font-semibold text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 transition-colors hover:underline"
+                className="text-xs text-rose-600 dark:text-rose-400 hover:underline font-medium"
               >
-                Forgot Password?
+                Forgot password?
               </Link>
             </div>
           </div>
 
-          {/* Login Submit Button with Validation and Loading States */}
           <button
             type="submit"
-            disabled={!isFormValid || isLoading}
-            className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-white font-semibold text-sm transition-all shadow-md ${
-              isLoading
-                ? 'bg-rose-700 cursor-wait opacity-85'
-                : !isFormValid
-                ? 'bg-slate-400 dark:bg-zinc-700 cursor-not-allowed opacity-60'
-                : 'bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 active:scale-[0.99] cursor-pointer shadow-rose-950/20'
-            }`}
+            disabled={isLoading}
+            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-white font-semibold text-sm transition-all shadow-md bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer shadow-rose-950/20"
           >
             {isLoading ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin text-white" />
-                <span>Authenticating with MongoDB...</span>
+                <span>Verifying Credentials...</span>
               </>
-            ) : !isFormValid ? (
-              <span>Fill email & password (min 6 chars)</span>
             ) : (
               <>
-                <span>Login to Flagging Dashboard</span>
+                <span>Sign In to Moderator Console</span>
                 <ArrowRight className="w-4 h-4" />
               </>
             )}

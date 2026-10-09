@@ -10,7 +10,6 @@ import {
   Eye,
   EyeOff,
   CheckCircle2,
-  AlertCircle,
   Loader2,
   ShieldCheck,
   ArrowLeft,
@@ -31,7 +30,6 @@ export default function ChangePasswordPage() {
   const [showNewPassword, setShowNewPassword] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -41,21 +39,32 @@ export default function ChangePasswordPage() {
     }
   }, []);
 
-  // Live Validations
-  const isCurrentPasswordEntered = currentPassword.length > 0;
-  const isNewPasswordValid = newPassword.length >= 6;
-  const isDifferentFromCurrent = newPassword.length > 0 && newPassword !== currentPassword;
-  const doPasswordsMatch = newPassword.length > 0 && newPassword === confirmPassword;
-
-  const isFormValid =
-    isCurrentPasswordEntered && isNewPasswordValid && isDifferentFromCurrent && doPasswordsMatch;
-
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isFormValid || isLoading) return;
+
+    if (!currentPassword) {
+      toast.error('Current Password Required', 'Please enter your current password.');
+      return;
+    }
+
+    if (newPassword.trim().length < 6) {
+      toast.error('Weak Password', 'New password must be at least 6 characters long.');
+      return;
+    }
+
+    if (newPassword.trim() === currentPassword) {
+      toast.error('Password Unchanged', 'New password cannot be identical to current password.');
+      return;
+    }
+
+    if (newPassword.trim() !== confirmPassword) {
+      toast.error('Password Mismatch', 'The new passwords do not match.');
+      return;
+    }
+
+    if (isLoading) return;
 
     setIsLoading(true);
-    setErrorMessage(null);
     setSuccessMessage(null);
 
     try {
@@ -79,12 +88,10 @@ export default function ChangePasswordPage() {
         setConfirmPassword('');
       } else {
         const msg = data.error || 'Failed to change password. Please check your current password.';
-        setErrorMessage(msg);
         toast.error('Change Failed', msg);
       }
     } catch (err: any) {
       const msg = err.message || 'Network error occurred. Please try again.';
-      setErrorMessage(msg);
       toast.error('Network Error', msg);
     } finally {
       setIsLoading(false);
@@ -146,14 +153,6 @@ export default function ChangePasswordPage() {
           </div>
         )}
 
-        {/* Error Alert Banner */}
-        {errorMessage && (
-          <div className="flex items-center gap-2.5 p-4 bg-rose-500/10 border border-rose-500/30 rounded-2xl text-rose-600 dark:text-rose-400 text-xs font-semibold animate-in fade-in duration-150">
-            <AlertCircle className="w-5 h-5 shrink-0 text-rose-500" />
-            <span>{errorMessage}</span>
-          </div>
-        )}
-
         {/* Change Password Form */}
         <form onSubmit={handleChangePassword} className="space-y-4">
           {/* Current Password Field */}
@@ -184,20 +183,9 @@ export default function ChangePasswordPage() {
 
           {/* New Password Field */}
           <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider">
-                New Password
-              </label>
-              {newPassword.length > 0 && (
-                <span
-                  className={`text-[11px] font-medium ${
-                    isNewPasswordValid ? 'text-emerald-500' : 'text-amber-500'
-                  }`}
-                >
-                  {isNewPasswordValid ? '✓ Min 6 characters' : 'Min 6 characters'}
-                </span>
-              )}
-            </div>
+            <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider mb-1.5">
+              New Password
+            </label>
             <div className="relative">
               <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-400" />
               <input
@@ -221,20 +209,9 @@ export default function ChangePasswordPage() {
 
           {/* Confirm New Password Field */}
           <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider">
-                Confirm New Password
-              </label>
-              {confirmPassword.length > 0 && (
-                <span
-                  className={`text-[11px] font-medium ${
-                    doPasswordsMatch ? 'text-emerald-500' : 'text-rose-500'
-                  }`}
-                >
-                  {doPasswordsMatch ? '✓ Passwords match' : 'Passwords do not match'}
-                </span>
-              )}
-            </div>
+            <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider mb-1.5">
+              Confirm New Password
+            </label>
             <div className="relative">
               <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-400" />
               <input
@@ -249,37 +226,10 @@ export default function ChangePasswordPage() {
             </div>
           </div>
 
-          {/* Validation Checklist Box */}
-          <div className="p-3.5 bg-slate-50 dark:bg-zinc-950/60 border border-slate-200 dark:border-zinc-800/80 rounded-xl space-y-1.5 text-xs text-slate-600 dark:text-zinc-400">
-            <p className="font-semibold text-slate-700 dark:text-zinc-300 text-[11px] uppercase tracking-wider">
-              Password Requirements:
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px]">
-              <div className="flex items-center gap-1.5">
-                <span className={isNewPasswordValid ? 'text-emerald-500' : 'text-slate-400'}>
-                  {isNewPasswordValid ? '✓' : '•'}
-                </span>
-                <span>At least 6 characters</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className={doPasswordsMatch ? 'text-emerald-500' : 'text-slate-400'}>
-                  {doPasswordsMatch ? '✓' : '•'}
-                </span>
-                <span>New passwords match</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className={isDifferentFromCurrent ? 'text-emerald-500' : 'text-slate-400'}>
-                  {isDifferentFromCurrent ? '✓' : '•'}
-                </span>
-                <span>Different from current</span>
-              </div>
-            </div>
-          </div>
-
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={!isFormValid || isLoading}
+            disabled={isLoading}
             className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-white font-semibold text-sm transition-all shadow-md bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer shadow-rose-950/20"
           >
             {isLoading ? (

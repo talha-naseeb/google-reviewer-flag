@@ -5,12 +5,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ToastProvider';
 import {
-  ShieldAlert,
   KeyRound,
   Mail,
   ArrowRight,
   ArrowLeft,
-  AlertCircle,
   Loader2,
   CheckCircle2,
   Lock,
@@ -31,7 +29,6 @@ export default function ForgotPasswordPage() {
   const [showPassword, setShowPassword] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
 
   // Validations
@@ -43,10 +40,15 @@ export default function ForgotPasswordPage() {
   // Step 1: Request Reset Code
   const handleRequestCode = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isEmailValid || isLoading) return;
+
+    if (!isEmailValid) {
+      toast.error('Invalid Email', 'Please enter a valid email address.');
+      return;
+    }
+
+    if (isLoading) return;
 
     setIsLoading(true);
-    setErrorMessage(null);
 
     try {
       const res = await fetch('/api/auth/forgot-password', {
@@ -64,12 +66,10 @@ export default function ForgotPasswordPage() {
         setStep('RESET_PASSWORD');
       } else {
         const msg = data.error || 'Failed to request reset code. Please check email.';
-        setErrorMessage(msg);
         toast.error('Request Failed', msg);
       }
     } catch (err: any) {
       const msg = err.message || 'Network error occurred. Please try again.';
-      setErrorMessage(msg);
       toast.error('Network Error', msg);
     } finally {
       setIsLoading(false);
@@ -79,10 +79,25 @@ export default function ForgotPasswordPage() {
   // Step 2: Submit Reset Code & New Password
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isCodeValid || !isPasswordValid || !doPasswordsMatch || isLoading) return;
+
+    if (!isCodeValid) {
+      toast.error('Invalid Code', 'Please enter the 6-digit verification code from your email.');
+      return;
+    }
+
+    if (!isPasswordValid) {
+      toast.error('Invalid Password', 'New password must be at least 6 characters.');
+      return;
+    }
+
+    if (!doPasswordsMatch) {
+      toast.error('Password Mismatch', 'The passwords you entered do not match.');
+      return;
+    }
+
+    if (isLoading) return;
 
     setIsLoading(true);
-    setErrorMessage(null);
 
     try {
       const res = await fetch('/api/auth/reset-password', {
@@ -98,16 +113,14 @@ export default function ForgotPasswordPage() {
       const data = await res.json();
 
       if (data.success) {
-        toast.success('Password Reset Successful!', 'Your new password is now active in MongoDB.');
+        toast.success('Password Reset Successful!', 'Your new password is now active.');
         setStep('COMPLETED');
       } else {
         const msg = data.error || 'Failed to reset password. Please check your verification code.';
-        setErrorMessage(msg);
         toast.error('Reset Failed', msg);
       }
     } catch (err: any) {
       const msg = err.message || 'Network error occurred. Please try again.';
-      setErrorMessage(msg);
       toast.error('Network Error', msg);
     } finally {
       setIsLoading(false);
@@ -133,18 +146,10 @@ export default function ForgotPasswordPage() {
             {step === 'COMPLETED'
               ? 'You can now sign in with your new password credentials.'
               : step === 'RESET_PASSWORD'
-              ? 'Enter the 6-digit code and choose a new password.'
+              ? 'Enter the 6-digit code from your email and choose a new password.'
               : 'Enter your registered email address to receive a reset code.'}
           </p>
         </div>
-
-        {/* Error message banner */}
-        {errorMessage && (
-          <div className="flex items-center gap-2 p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-600 dark:text-rose-400 text-xs font-semibold animate-in fade-in duration-150">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{errorMessage}</span>
-          </div>
-        )}
 
         {/* Info message banner */}
         {infoMessage && step === 'RESET_PASSWORD' && (
@@ -158,20 +163,9 @@ export default function ForgotPasswordPage() {
         {step === 'REQUEST_CODE' && (
           <form onSubmit={handleRequestCode} className="space-y-4">
             <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider">
-                  Email Address
-                </label>
-                {email.length > 0 && (
-                  <span
-                    className={`text-[11px] font-medium ${
-                      isEmailValid ? 'text-emerald-500' : 'text-rose-500'
-                    }`}
-                  >
-                    {isEmailValid ? '✓ Valid email' : 'Invalid email format'}
-                  </span>
-                )}
-              </div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider mb-1.5">
+                Email Address
+              </label>
               <div className="relative">
                 <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-400" />
                 <input
@@ -188,7 +182,7 @@ export default function ForgotPasswordPage() {
 
             <button
               type="submit"
-              disabled={!isEmailValid || isLoading}
+              disabled={isLoading}
               className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-white font-semibold text-sm transition-all shadow-md bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer shadow-rose-950/20"
             >
               {isLoading ? (
@@ -210,14 +204,9 @@ export default function ForgotPasswordPage() {
         {step === 'RESET_PASSWORD' && (
           <form onSubmit={handleResetPassword} className="space-y-4">
             <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider">
-                  6-Digit Verification Code
-                </label>
-                <span className="text-[11px] text-slate-400">
-                  {resetCode.length === 6 ? '✓ 6 digits' : 'Enter 6 digits'}
-                </span>
-              </div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider mb-1.5">
+                6-Digit Verification Code
+              </label>
               <div className="relative">
                 <KeyRound className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-400" />
                 <input
@@ -234,20 +223,9 @@ export default function ForgotPasswordPage() {
             </div>
 
             <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider">
-                  New Password
-                </label>
-                {newPassword.length > 0 && (
-                  <span
-                    className={`text-[11px] font-medium ${
-                      isPasswordValid ? 'text-emerald-500' : 'text-amber-500'
-                    }`}
-                  >
-                    {isPasswordValid ? '✓ Min length met' : 'Min 6 characters'}
-                  </span>
-                )}
-              </div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider mb-1.5">
+                New Password
+              </label>
               <div className="relative">
                 <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-400" />
                 <input
@@ -270,20 +248,9 @@ export default function ForgotPasswordPage() {
             </div>
 
             <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider">
-                  Confirm New Password
-                </label>
-                {confirmPassword.length > 0 && (
-                  <span
-                    className={`text-[11px] font-medium ${
-                      doPasswordsMatch ? 'text-emerald-500' : 'text-rose-500'
-                    }`}
-                  >
-                    {doPasswordsMatch ? '✓ Passwords match' : 'Passwords do not match'}
-                  </span>
-                )}
-              </div>
+              <label className="block text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider mb-1.5">
+                Confirm New Password
+              </label>
               <div className="relative">
                 <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-400" />
                 <input
@@ -300,7 +267,7 @@ export default function ForgotPasswordPage() {
 
             <button
               type="submit"
-              disabled={!isCodeValid || !isPasswordValid || !doPasswordsMatch || isLoading}
+              disabled={isLoading}
               className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-white font-semibold text-sm transition-all shadow-md bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer shadow-rose-950/20"
             >
               {isLoading ? (
