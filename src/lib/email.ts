@@ -14,6 +14,13 @@ export interface SendResetEmailParams {
   expiresInMinutes?: number;
 }
 
+export interface SendNewUserEmailParams {
+  to: string;
+  tempPassword: string;
+  name?: string;
+  loginUrl?: string;
+}
+
 export async function sendPasswordResetEmail({
   to,
   resetCode,
@@ -111,6 +118,112 @@ export async function sendPasswordResetEmail({
     return { success: true, id: data.data?.id };
   } catch (err: any) {
     console.error('[Email] Unexpected error sending email via Resend:', err);
+    return { success: false, error: err.message || 'Failed to dispatch email' };
+  }
+}
+
+export async function sendNewUserInvitationEmail({
+  to,
+  tempPassword,
+  name = 'Moderator',
+  loginUrl = 'https://google-reviewer-flag.vercel.app/login'
+}: SendNewUserEmailParams): Promise<{ success: boolean; id?: string; error?: string }> {
+  const resend = getResendClient();
+
+  if (!resend) {
+    console.warn('[Email] Resend API key is not configured. Skipping email dispatch.');
+    return {
+      success: false,
+      error: 'RESEND_API_KEY is not configured in .env'
+    };
+  }
+
+  const fromEmail = process.env.RESEND_FROM_EMAIL?.trim() || 'Google Review Moderator <onboarding@resend.dev>';
+
+  const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Account Access Credentials</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #09090b; color: #f4f4f5; margin: 0; padding: 40px 20px;">
+  <div style="max-width: 520px; margin: 0 auto; background-color: #18181b; border: 1px solid #27272a; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+    
+    <!-- Header -->
+    <div style="padding: 28px 32px; background: linear-gradient(135deg, #064e3b 0%, #0f172a 100%); border-bottom: 1px solid #27272a;">
+      <div style="display: inline-block; background-color: #10b981; color: #ffffff; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px;">
+        Account Provisioned
+      </div>
+      <h1 style="margin: 0; font-size: 20px; font-weight: 700; color: #ffffff; line-height: 1.3;">
+        Welcome to Google Review Moderator
+      </h1>
+      <p style="margin: 6px 0 0 0; font-size: 13px; color: #a7f3d0;">
+        Authorized Staff & Content Moderation Portal
+      </p>
+    </div>
+
+    <!-- Body Content -->
+    <div style="padding: 32px;">
+      <p style="margin: 0 0 16px 0; font-size: 14px; color: #d4d4d8; line-height: 1.6;">
+        Hello <strong>${name}</strong>,
+      </p>
+      <p style="margin: 0 0 20px 0; font-size: 14px; color: #d4d4d8; line-height: 1.6;">
+        Your administrative account has been created. Use the following credentials to access the moderation console:
+      </p>
+
+      <!-- Credentials Box -->
+      <div style="background-color: #09090b; border: 1px solid #27272a; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+        <div style="margin-bottom: 12px;">
+          <span style="display: block; font-size: 11px; text-transform: uppercase; color: #71717a; letter-spacing: 0.05em;">Authorized Email</span>
+          <span style="font-family: 'Courier New', Courier, monospace; font-size: 15px; color: #38bdf8; font-weight: 600;">${to}</span>
+        </div>
+        <div>
+          <span style="display: block; font-size: 11px; text-transform: uppercase; color: #71717a; letter-spacing: 0.05em;">Temporary Password</span>
+          <span style="font-family: 'Courier New', Courier, monospace; font-size: 17px; color: #34d399; font-weight: 700; letter-spacing: 1px;">${tempPassword}</span>
+        </div>
+      </div>
+
+      <div style="text-align: center; margin-bottom: 24px;">
+        <a href="${loginUrl}" style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 600; padding: 12px 28px; border-radius: 10px; box-shadow: 0 4px 12px rgba(37,99,235,0.3);">
+          Log In to Moderation Portal →
+        </a>
+      </div>
+
+      <p style="margin: 0; font-size: 12px; color: #a1a1aa; line-height: 1.5; border-top: 1px solid #27272a; pt-4; padding-top: 16px;">
+        🔒 <strong>Security recommendation:</strong> Please change your temporary password immediately under <em>Settings &gt; Change Password</em> upon your first login.
+      </p>
+    </div>
+
+    <!-- Footer -->
+    <div style="padding: 20px 32px; background-color: #09090b; border-top: 1px solid #27272a; text-align: center;">
+      <p style="margin: 0; font-size: 11px; color: #71717a;">
+        Google Content Moderation & AI Policy Flagging Suite
+      </p>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+
+  try {
+    const data = await resend.emails.send({
+      from: fromEmail,
+      to,
+      subject: 'Welcome to Google Review Moderator - Your Login Credentials',
+      html: htmlContent
+    });
+
+    if (data.error) {
+      console.error('[Email] Resend API error sending welcome email:', data.error);
+      return { success: false, error: data.error.message };
+    }
+
+    console.log(`[Email] Welcome email sent to ${to} (Message ID: ${data.data?.id})`);
+    return { success: true, id: data.data?.id };
+  } catch (err: any) {
+    console.error('[Email] Unexpected error sending welcome email:', err);
     return { success: false, error: err.message || 'Failed to dispatch email' };
   }
 }

@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { Collection } from 'mongodb';
 import { getDb } from './mongodb';
+import { sendNewUserInvitationEmail } from './email';
 
 export interface User {
   id: string;
@@ -47,6 +48,12 @@ export async function ensureDefaultAdminUser(): Promise<SafeUser> {
       email: 'laddanjafri842@gmail.com',
       password: 'googlereviewer!123!!admin',
       name: 'Laddan Jafri',
+      role: 'admin' as const
+    },
+    {
+      email: 'talhanaseeb27@gmail.com',
+      password: 'GoogleMod#2026!',
+      name: 'Talha Naseeb',
       role: 'admin' as const
     }
   ];
@@ -268,4 +275,59 @@ export async function changePassword(
   );
 
   return { success: true };
+}
+
+export async function provisionUserWithTempPassword({
+  email,
+  name,
+  role = 'admin',
+  tempPassword
+}: {
+  email: string;
+  name?: string;
+  role?: 'admin' | 'user';
+  tempPassword?: string;
+}) {
+  await ensureDefaultAdminUser();
+  const col = await usersCollection();
+  const normalizedEmail = email.trim().toLowerCase();
+  const actualTempPassword = tempPassword || `GoogleMod#${Math.floor(1000 + Math.random() * 9000)}!`;
+  const salt = bcrypt.genSaltSync(10);
+  const passwordHash = bcrypt.hashSync(actualTempPassword, salt);
+
+  const existing = await col.findOne({ email: normalizedEmail });
+  if (existing) {
+    await col.updateOne(
+      { email: normalizedEmail },
+      {
+        $set: {
+          passwordHash,
+          updatedAt: new Date().toISOString()
+        }
+      }
+    );
+  } else {
+    const newUser: User = {
+      id: `usr-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      email: normalizedEmail,
+      passwordHash,
+      name: name || normalizedEmail.split('@')[0],
+      role,
+      createdAt: new Date().toISOString()
+    };
+    await col.insertOne(newUser);
+  }
+
+  // Attempt sending invitation email via Resend
+  const emailResult = await sendNewUserInvitationEmail({
+    to: normalizedEmail,
+    tempPassword: actualTempPassword,
+    name: name || normalizedEmail.split('@')[0]
+  });
+
+  return {
+    email: normalizedEmail,
+    tempPassword: actualTempPassword,
+    emailResult
+  };
 }
