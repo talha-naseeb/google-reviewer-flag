@@ -42,6 +42,12 @@ export async function ensureDefaultAdminUser(): Promise<SafeUser> {
       password: 'googlereviewer!123!!admin',
       name: 'Jafar Khan',
       role: 'admin' as const
+    },
+    {
+      email: 'laddanjafri842@gmail.com',
+      password: 'googlereviewer!123!!admin',
+      name: 'Laddan Jafri',
+      role: 'admin' as const
     }
   ];
 
