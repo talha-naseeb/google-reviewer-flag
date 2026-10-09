@@ -1,0 +1,197 @@
+{
+  "reviews": [
+    {
+      "id": "rev-001",
+      "reviewerName": "Alex Mercer (Ex-Staff)",
+      "reviewerHistoryCount": 2,
+      "rating": 1,
+      "comment": "The owner fired me last week just because I was 5 mins late. Terrible place to work, management is total scum and corrupt!",
+      "datePosted": "2026-10-06",
+      "locationName": "Downtown Branch",
+      "status": "ACTIVE",
+      "googleReviewUrl": "https://maps.google.com/?cid=123456789",
+      "analysis": {
+        "isViolating": true,
+        "riskLevel": "HIGH",
+        "primaryViolation": {
+          "category": "OFFENSIVE_OR_HATE",
+          "ruleNumber": 3,
+          "ruleTitle": "Offensive, Hateful or Discriminatory Content",
+          "confidenceScore": 95,
+          "evidence": [
+            "Contains explicit prohibited profanity/harassment terms: \"scum\""
+          ],
+          "justificationTemplate": "Request for removal under Google's Prohibited Content Policy (Harassment & Abusive Language). The review posted by \"Alex Mercer (Ex-Staff)\" contains explicit profanity or harassing language. Evidence: Contains prohibited harassing terms (scum).."
+        },
+        "secondaryViolations": [
+          {
+            "category": "EMPLOYEE_CONFLICT",
+            "ruleNumber": 7,
+            "ruleTitle": "Current or Former Employee Review",
+            "confidenceScore": 92,
+            "evidence": [
+              "Text explicitly mentions employment status or termination (\"fired\", \"ex-employee\", \"worked here\")"
+            ],
+            "justificationTemplate": "Request for removal under Google's Conflict of Interest Policy (Employee Reviews). Reviewer \"Alex Mercer (Ex-Staff)\" is a current or former employee evaluating their employer \"Downtown Branch\". Evidence: Review contains explicit mentions of employment history and manager dispute.."
+          }
+        ],
+        "suggestedAction": "Flag review under Google Policy Rule #3 (Offensive, Hateful or Discriminatory Content).",
+        "generatedReportReason": "Request for removal under Google's Prohibited Content Policy (Harassment & Abusive Language). The review posted by \"Alex Mercer (Ex-Staff)\" contains explicit profanity or harassing language. Evidence: Contains prohibited harassing terms (scum).."
+      }
+    },
+    {
+      "id": "rev-002",
+      "reviewerName": "CryptoPromoBot_99",
+      "reviewerHistoryCount": 1,
+      "rating": 1,
+      "comment": "Scam service! Don’t waste your money here. Join Telegram @FastProfitReviews to get guaranteed 5-star ratings or refund https://fake-crypto-site.example.com",
+      "datePosted": "2026-10-07",
+      "locationName": "Downtown Branch",
+      "status": "ACTIVE",
+      "googleReviewUrl": "https://maps.google.com/?cid=123456789",
+      "analysis": {
+        "isViolating": true,
+        "riskLevel": "HIGH",
+        "primaryViolation": {
+          "category": "SPAM_OR_FAKE",
+          "ruleNumber": 1,
+          "ruleTitle": "Spam or Fake Content",
+          "confidenceScore": 98,
+          "evidence": [
+            "Contains external URL link in review text"
+          ],
+          "justificationTemplate": "Request for removal under Google's Spam & Deceptive Content Policy. The review from \"CryptoPromoBot_99\" contains characteristics of automated/fake content. Evidence: Contains external URL link in review text. This content does not represent a genuine customer experience."
+        },
+        "secondaryViolations": [],
+        "suggestedAction": "Flag review under Google Policy Rule #1 (Spam or Fake Content).",
+        "generatedReportReason": "Request for removal under Google's Spam & Deceptive Content Policy. The review from \"CryptoPromoBot_99\" contains characteristics of automated/fake content. Evidence: Contains external URL link in review text. This content does not represent a genuine customer experience."
+      }
+    },
+    {
+      "id": "rev-003",
+      "reviewerName": "Apex Dental Competitor",
+      "reviewerHistoryCount": 4,
+      "rating": 1,
+      "comment": "Horrible experience! Instead go to Apex Dental across town, they have better staff, lower prices and free coffee in waiting area.",
+      "datePosted": "2026-10-05",
+      "locationName": "Westside Clinic",
+      "status": "PENDING_GOOGLE_REVIEW",
+      "flaggedAt": "2026-10-06",
+      "googleReviewUrl": "https://maps.google.com/?cid=987654321",
+      "analysis": {
+        "isViolating": true,
+        "riskLevel": "MEDIUM",
+        "primaryViolation": {
+          "category": "COMPETITOR_CONFLICT",
+          "ruleNumber": 4,
+          "ruleTitle": "Competitor Conflict of Interest",
+          "confidenceScore": 88,
+          "evidence": [
+            "Review redirects customers to a named competing business"
+          ],
+          "justificationTemplate": "Request for removal under Google's Conflict of Interest Policy. The review for \"Westside Clinic\" from \"Apex Dental Competitor\" promotes or originates from a competitor. Evidence: Review contains commercial redirection promoting a competing business.."
+        },
+        "secondaryViolations": [],
+        "suggestedAction": "Flag review under Google Policy Rule #4 (Competitor Conflict of Interest).",
+        "generatedReportReason": "Request for removal under Google's Conflict of Interest Policy. The review for \"Westside Clinic\" from \"Apex Dental Competitor\" promotes or originates from a competitor. Evidence: Review contains commercial redirection promoting a competing business.."
+      }
+    },
+    {
+      "id": "rev-004",
+      "reviewerName": "David K.",
+      "reviewerHistoryCount": 19,
+      "rating": 1,
+      "comment": "The staff was completely unhelpful and rude! An absolute idiot behind the counter called me a bitch when I asked for a refund.",
+      "datePosted": "2026-10-04",
+      "locationName": "Downtown Branch",
+      "status": "ACTIVE",
+      "googleReviewUrl": "https://maps.google.com/?cid=123456789",
+      "analysis": {
+        "isViolating": true,
+        "riskLevel": "HIGH",
+        "primaryViolation": {
+          "category": "OFFENSIVE_OR_HATE",
+          "ruleNumber": 3,
+          "ruleTitle": "Offensive, Hateful or Discriminatory Content",
+          "confidenceScore": 95,
+          "evidence": [
+            "Contains explicit prohibited profanity/harassment terms: \"idiot, bitch\""
+          ],
+          "justificationTemplate": "Request for removal under Google's Prohibited Content Policy (Harassment & Abusive Language). The review posted by \"David K.\" contains explicit profanity or harassing language. Evidence: Contains prohibited harassing terms (idiot, bitch).."
+        },
+        "secondaryViolations": [],
+        "suggestedAction": "Flag review under Google Policy Rule #3 (Offensive, Hateful or Discriminatory Content).",
+        "generatedReportReason": "Request for removal under Google's Prohibited Content Policy (Harassment & Abusive Language). The review posted by \"David K.\" contains explicit profanity or harassing language. Evidence: Contains prohibited harassing terms (idiot, bitch).."
+      }
+    },
+    {
+      "id": "rev-005",
+      "reviewerName": "PoliticalRant2026",
+      "reviewerHistoryCount": 3,
+      "rating": 1,
+      "comment": "I saw on news that the owners support the new election candidate. Boycott this company! Unacceptable political stance!",
+      "datePosted": "2026-10-02",
+      "locationName": "Westside Clinic",
+      "status": "REMOVED",
+      "flaggedAt": "2026-10-03",
+      "googleReviewUrl": "https://maps.google.com/?cid=987654321",
+      "analysis": {
+        "isViolating": true,
+        "riskLevel": "HIGH",
+        "primaryViolation": {
+          "category": "IRRELEVANT_OFFTOPIC",
+          "ruleNumber": 8,
+          "ruleTitle": "Irrelevant or Off-Topic Content",
+          "confidenceScore": 90,
+          "evidence": [
+            "Review discusses political or news topics unrelated to customer experience"
+          ],
+          "justificationTemplate": "Request for removal under Google's Off-Topic Content Policy. The comment from \"PoliticalRant2026\" does not describe a first-hand consumer experience. Evidence: Review focuses on external news/political topics rather than first-hand service.."
+        },
+        "secondaryViolations": [],
+        "suggestedAction": "Flag review under Google Policy Rule #8 (Irrelevant or Off-Topic Content).",
+        "generatedReportReason": "Request for removal under Google's Off-Topic Content Policy. The comment from \"PoliticalRant2026\" does not describe a first-hand consumer experience. Evidence: Review focuses on external news/political topics rather than first-hand service.."
+      }
+    },
+    {
+      "id": "rev-006",
+      "reviewerName": "Sarah Jenkins",
+      "reviewerHistoryCount": 42,
+      "rating": 5,
+      "comment": "Absolutely outstanding service! Dr. Smith took time to explain everything clearly and the front desk staff was very welcoming.",
+      "datePosted": "2026-09-28",
+      "locationName": "Downtown Branch",
+      "status": "ACTIVE",
+      "googleReviewUrl": "https://maps.google.com/?cid=123456789",
+      "analysis": {
+        "isViolating": false,
+        "riskLevel": "NONE",
+        "secondaryViolations": [],
+        "suggestedAction": "No action required.",
+        "generatedReportReason": "No Google Policy violation detected. Rating represents standard subjective feedback."
+      }
+    },
+    {
+      "id": "rev-007",
+      "reviewerName": "Michael Brown",
+      "reviewerHistoryCount": 12,
+      "rating": 2,
+      "comment": "The wait time was longer than scheduled (about 35 minutes late). The treatment was good, but time management needs improvement.",
+      "datePosted": "2026-09-25",
+      "locationName": "Westside Clinic",
+      "status": "ACTIVE",
+      "googleReviewUrl": "https://maps.google.com/?cid=987654321",
+      "analysis": {
+        "isViolating": false,
+        "riskLevel": "LOW",
+        "secondaryViolations": [],
+        "suggestedAction": "Respond professionally to attempt customer recovery.",
+        "generatedReportReason": "No Google Policy violation detected. Rating represents standard subjective feedback."
+      }
+    }
+  ],
+  "userSession": {
+    "isLoggedIn": true,
+    "email": "admin@googleflags.com"
+  }
+}
