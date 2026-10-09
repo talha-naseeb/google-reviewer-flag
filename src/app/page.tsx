@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useToast } from '@/components/ToastProvider';
 import { ReviewsTable } from '@/components/ReviewsTable';
 import { DashboardStats, Review, ModerationStatus } from '@/types/review';
 import {
@@ -19,6 +20,7 @@ import {
 } from 'lucide-react';
 
 export default function MainDashboardPage() {
+  const { toast } = useToast();
   const [stats, setStats] = useState<DashboardStats>({
     totalReviews: 0,
     flaggedCount: 0,
@@ -32,7 +34,7 @@ export default function MainDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = async (showNotice = false) => {
     setIsLoading(true);
     try {
       const res = await fetch('/api/dashboard/stats');
@@ -40,6 +42,9 @@ export default function MainDashboardPage() {
       if (data.success) {
         setStats(data.stats);
         setReviews(data.reviews);
+        if (showNotice) {
+          toast.info('Refreshed', 'Dashboard metrics updated from database.');
+        }
       }
     } catch (e) {
       console.error('Fetch Dashboard Data Error:', e);
@@ -49,7 +54,7 @@ export default function MainDashboardPage() {
   };
 
   useEffect(() => {
-    fetchDashboardData();
+    fetchDashboardData(false);
   }, []);
 
   const handleUpdateStatus = async (id: string, status: ModerationStatus) => {
@@ -60,9 +65,14 @@ export default function MainDashboardPage() {
         body: JSON.stringify({ status })
       });
       if (res.ok) {
-        fetchDashboardData();
+        toast.success('Status Updated', `Review marked as ${status.toLowerCase()}`);
+        fetchDashboardData(false);
+      } else {
+        toast.error('Update Failed', 'Could not update review status.');
       }
-    } catch (e) {}
+    } catch (e: any) {
+      toast.error('Error', e.message || 'Status update failed.');
+    }
   };
 
   const handleCopyReason = (reasonText: string, id: string) => {
@@ -93,7 +103,7 @@ export default function MainDashboardPage() {
 
         <div className="flex items-center gap-3">
           <button
-            onClick={fetchDashboardData}
+            onClick={() => fetchDashboardData(true)}
             className="p-2.5 rounded-xl bg-slate-100 dark:bg-zinc-800/80 hover:bg-slate-200 dark:hover:bg-zinc-800 border border-slate-200 dark:border-zinc-700/60 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 transition-colors"
             title="Refresh Dashboard"
           >

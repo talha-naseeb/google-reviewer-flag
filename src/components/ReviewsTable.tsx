@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useToast } from '@/components/ToastProvider';
 import { Review } from '@/types/review';
 import { Copy, Check, ExternalLink, CheckCircle2, Star } from 'lucide-react';
 
@@ -25,16 +26,21 @@ const Stars: React.FC<{ value: number }> = ({ value }) => (
 );
 
 export const ReviewsTable: React.FC<ReviewsTableProps> = ({ reviews, onMarkRemoved }) => {
+  const { toast } = useToast();
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const handleCopy = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
     setCopiedId(id);
+    toast.info('Copied!', 'AI removal description copied to clipboard');
     setTimeout(() => setCopiedId(null), 2000);
   };
 
   const handleOpen = (url: string, reason: string) => {
-    if (reason) navigator.clipboard.writeText(reason);
+    if (reason) {
+      navigator.clipboard.writeText(reason);
+      toast.info('Copied & Opening', 'Description copied. Opening Google Maps...');
+    }
     const finalUrl = url.startsWith('http') ? url : `https://${url}`;
     window.open(finalUrl, '_blank', 'noopener,noreferrer');
   };

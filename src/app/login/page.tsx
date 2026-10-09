@@ -2,17 +2,27 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ShieldAlert, Lock, Mail, ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
+import { useToast } from '@/components/ToastProvider';
+import { ShieldAlert, Lock, Mail, ArrowRight, AlertCircle, Loader2, CheckCircle2 } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { toast } = useToast();
+
   const [email, setEmail] = useState('admin@googlereviewer.com');
   const [password, setPassword] = useState('googlereviewer!123!!admin');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Client-side validations
+  const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const isPasswordValid = password.trim().length >= 6;
+  const isFormValid = isEmailValid && isPasswordValid;
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isFormValid || isLoading) return;
+
     setIsLoading(true);
     setErrorMessage(null);
 
@@ -20,7 +30,7 @@ export default function LoginPage() {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email: email.trim(), password })
       });
 
       const data = await res.json();
@@ -29,12 +39,20 @@ export default function LoginPage() {
         localStorage.setItem('userLoggedIn', 'true');
         localStorage.setItem('userEmail', data.user.email);
         localStorage.setItem('userName', data.user.name || 'Admin');
-        router.push('/');
+
+        toast.success('Signed in successfully!', `Welcome back, ${data.user.name || 'Admin'}`);
+        setTimeout(() => {
+          router.push('/');
+        }, 600);
       } else {
-        setErrorMessage(data.error || 'Authentication failed. Please check credentials.');
+        const msg = data.error || 'Authentication failed. Please check your credentials.';
+        setErrorMessage(msg);
+        toast.error('Authentication Failed', msg);
       }
     } catch (err: any) {
-      setErrorMessage(err.message || 'Network error occurred. Try again.');
+      const msg = err.message || 'Network error occurred. Please try again.';
+      setErrorMessage(msg);
+      toast.error('Network Error', msg);
     } finally {
       setIsLoading(false);
     }
@@ -54,7 +72,7 @@ export default function LoginPage() {
 
         {/* Error message banner */}
         {errorMessage && (
-          <div className="flex items-center gap-2 p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-600 dark:text-rose-400 text-xs font-semibold">
+          <div className="flex items-center gap-2 p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-600 dark:text-rose-400 text-xs font-semibold animate-in fade-in duration-150">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{errorMessage}</span>
           </div>
@@ -63,45 +81,88 @@ export default function LoginPage() {
         {/* Login Form */}
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 block mb-1.5 uppercase tracking-wider">Email Address</label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider">
+                Email Address
+              </label>
+              {email.length > 0 && (
+                <span
+                  className={`text-[11px] font-medium ${
+                    isEmailValid ? 'text-emerald-500' : 'text-rose-500'
+                  }`}
+                >
+                  {isEmailValid ? '✓ Valid email' : 'Invalid email format'}
+                </span>
+              )}
+            </div>
             <div className="relative">
               <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-400" />
               <input
                 type="email"
                 required
+                disabled={isLoading}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="admin@googlereviewer.com"
-                className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-zinc-200 text-sm rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:border-rose-500 transition-colors"
+                className={`w-full bg-slate-50 dark:bg-zinc-950 border text-slate-900 dark:text-zinc-200 text-sm rounded-xl pl-10 pr-4 py-3 focus:outline-none transition-colors ${
+                  email.length > 0 && !isEmailValid
+                    ? 'border-rose-400 focus:border-rose-500'
+                    : 'border-slate-200 dark:border-zinc-800 focus:border-rose-500'
+                } ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
               />
             </div>
           </div>
 
           <div>
-            <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 block mb-1.5 uppercase tracking-wider">Password</label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-bold text-slate-700 dark:text-zinc-300 uppercase tracking-wider">
+                Password
+              </label>
+              {password.length > 0 && (
+                <span
+                  className={`text-[11px] font-medium ${
+                    isPasswordValid ? 'text-emerald-500' : 'text-amber-500'
+                  }`}
+                >
+                  {isPasswordValid ? '✓ Sufficient length' : 'Min 6 characters'}
+                </span>
+              )}
+            </div>
             <div className="relative">
               <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-400" />
               <input
                 type="password"
                 required
+                disabled={isLoading}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-zinc-200 text-sm rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:border-rose-500 transition-colors"
+                className={`w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-zinc-200 text-sm rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:border-rose-500 transition-colors ${
+                  isLoading ? 'opacity-70 cursor-not-allowed' : ''
+                }`}
               />
             </div>
           </div>
 
+          {/* Login Submit Button with Validation and Loading States */}
           <button
             type="submit"
-            disabled={isLoading}
-            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white font-semibold text-sm py-3.5 rounded-xl shadow-lg shadow-rose-950/20 transition-all mt-2 disabled:opacity-70"
+            disabled={!isFormValid || isLoading}
+            className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-white font-semibold text-sm transition-all shadow-md ${
+              isLoading
+                ? 'bg-rose-700 cursor-wait opacity-85'
+                : !isFormValid
+                ? 'bg-slate-400 dark:bg-zinc-700 cursor-not-allowed opacity-60'
+                : 'bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 active:scale-[0.99] cursor-pointer shadow-rose-950/20'
+            }`}
           >
             {isLoading ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin text-white" />
                 <span>Authenticating with MongoDB...</span>
               </>
+            ) : !isFormValid ? (
+              <span>Fill email & password (min 6 chars)</span>
             ) : (
               <>
                 <span>Login to Flagging Dashboard</span>

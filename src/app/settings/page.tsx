@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useToast } from '@/components/ToastProvider';
 import { Settings, Save, Check, ExternalLink, Bell, Send, Radio } from 'lucide-react';
 
 export default function SettingsPage() {
+  const { toast } = useToast();
   const [gbpAccountId, setGbpAccountId] = useState('');
   const [gbpLocationId, setGbpLocationId] = useState('');
   const [webhookUrl, setWebhookUrl] = useState('https://hooks.slack.com/services/DEMO/WEBHOOK');
@@ -16,6 +18,7 @@ export default function SettingsPage() {
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     setSaved(true);
+    toast.success('Settings Saved', 'Your application preferences were updated.');
     setTimeout(() => setSaved(false), 2000);
   };
 
@@ -32,11 +35,15 @@ export default function SettingsPage() {
       const data = await res.json();
       if (data.success) {
         setTestResult('Test alert sent successfully!');
+        toast.success('Notification Dispatched', 'Test alert sent to webhook and email.');
       } else {
-        setTestResult(`Error: ${data.error || 'Failed to dispatch test'}`);
+        const errorMsg = data.error || 'Failed to dispatch test';
+        setTestResult(`Error: ${errorMsg}`);
+        toast.error('Webhook Error', errorMsg);
       }
     } catch (err: any) {
       setTestResult(`Error: ${err.message}`);
+      toast.error('Dispatch Error', err.message || 'Network error occurred');
     } finally {
       setTestingWebhook(false);
     }

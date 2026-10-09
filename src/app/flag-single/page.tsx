@@ -2,11 +2,13 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useToast } from '@/components/ToastProvider';
 import { generateNvidiaRemovalDescription, NvidiaGenerationResult } from '@/lib/nvidiaAI';
 import { Link2, RefreshCw, AlertTriangle, ExternalLink, Copy, Check, Trash2, ShieldCheck } from 'lucide-react';
 
 export default function SingleLinkFlagPage() {
   const router = useRouter();
+  const { toast } = useToast();
 
   // Input State
   const [urlInput, setUrlInput] = useState('');
@@ -44,12 +46,16 @@ export default function SingleLinkFlagPage() {
         if (details.rating) setRating(details.rating);
         if (details.comment) setCommentText(details.comment);
         setHasFetchedDetails(true);
+        toast.success('Review Extracted!', `Fetched review from ${details.reviewerName || 'Google User'}`);
 
         // Auto-run NVIDIA AI generation once fetched
         runAiGeneration(details.comment || '', details.reviewerName || 'Google User', details.rating || 1);
+      } else {
+        toast.warning('Extraction Notice', data.error || 'Could not auto-extract details from this link.');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.warn('Auto fetch error:', err);
+      toast.error('Fetch Error', err.message || 'Failed to scrape the review link.');
     } finally {
       setIsFetchingUrl(false);
     }
@@ -60,8 +66,10 @@ export default function SingleLinkFlagPage() {
     try {
       const result = await generateNvidiaRemovalDescription(comment, name, stars);
       setAiResult(result);
-    } catch (e) {
+      toast.info('AI Policy Matched', `Matched Rule #${result.ruleNumber}: ${result.policyRuleTitle}`);
+    } catch (e: any) {
       console.error(e);
+      toast.error('AI Generation Failed', e.message || 'Could not generate removal description.');
     } finally {
       setIsGenerating(false);
     }
@@ -76,6 +84,7 @@ export default function SingleLinkFlagPage() {
     setHasFetchedDetails(false);
     setAiResult(null);
     setSubmittedSuccess(false);
+    toast.info('Details Cleared', 'The form has been reset.');
   };
 
   // Submit Flag to Backend & Open Google Maps
@@ -90,7 +99,7 @@ export default function SingleLinkFlagPage() {
 
     // Save to Backend Persistent Database
     try {
-      await fetch('/api/reviews/submit-flag', {
+      const res = await fetch('/api/reviews/submit-flag', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -121,9 +130,15 @@ export default function SingleLinkFlagPage() {
           }
         })
       });
-      setSubmittedSuccess(true);
-    } catch (e) {
+      if (res.ok) {
+        setSubmittedSuccess(true);
+        toast.success('Flag Recorded!', 'Saved to database & opened on Google Maps');
+      } else {
+        toast.warning('Warning', 'Review flag opened, but saving to DB failed.');
+      }
+    } catch (e: any) {
       console.warn('Save submit flag error:', e);
+      toast.error('Database Error', e.message || 'Could not save flag record.');
     }
 
     // Open target link on Google Maps
@@ -254,6 +269,7 @@ export default function SingleLinkFlagPage() {
                         onClick={() => {
                           navigator.clipboard.writeText(aiResult.generatedReason);
                           setCopied(true);
+                          toast.info('Copied!', 'AI removal description copied to clipboard');
                           setTimeout(() => setCopied(false), 2000);
                         }}
                         className="flex items-center gap-1.5 text-xs text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 bg-rose-500/10 px-3 py-1 rounded-lg border border-rose-500/30 transition-colors font-semibold"

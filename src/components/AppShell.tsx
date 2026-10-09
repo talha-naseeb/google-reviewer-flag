@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { ThemeProvider } from './ThemeProvider';
+import { ToastProvider } from './ToastProvider';
 
 export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const pathname = usePathname();
@@ -15,7 +16,8 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
   return (
     <ThemeProvider>
-      <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 transition-colors">
+      <ToastProvider>
+        <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 text-slate-900 dark:text-zinc-100 transition-colors">
         {!isLoginPage && (
           <Sidebar
             isCollapsed={isSidebarCollapsed}
@@ -45,6 +47,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
           <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">{children}</main>
         </div>
       </div>
+      </ToastProvider>
     </ThemeProvider>
   );
 };

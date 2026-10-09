@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useToast } from '@/components/ToastProvider';
 import { parseCSVContent, generateSampleCSV } from '@/lib/csvParser';
 import { generateNvidiaRemovalDescription } from '@/lib/nvidiaAI';
 import { Review } from '@/types/review';
@@ -8,6 +9,7 @@ import { ReviewsTable } from '@/components/ReviewsTable';
 import { FileSpreadsheet, Upload, Download, Sparkles, Copy, Check, ExternalLink, Trash2 } from 'lucide-react';
 
 export default function BulkFlagPage() {
+  const { toast } = useToast();
   const [bulkText, setBulkText] = useState('');
   const [bulkResults, setBulkResults] = useState<Review[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -17,6 +19,7 @@ export default function BulkFlagPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    toast.info('File Uploaded', `Processing "${file.name}"...`);
     const reader = new FileReader();
     reader.onload = async (event) => {
       const content = event.target?.result as string;
@@ -32,6 +35,7 @@ export default function BulkFlagPage() {
   const handleProcessText = async () => {
     if (!bulkText.trim()) return;
     setIsProcessing(true);
+    toast.info('Processing URLs', 'Parsing links and generating AI justifications...');
     const parsed = parseCSVContent(bulkText);
     await processBulk(parsed);
   };
@@ -75,6 +79,7 @@ export default function BulkFlagPage() {
 
     setBulkResults(processed);
     setIsProcessing(false);
+    toast.success('Batch Complete', `Successfully processed ${processed.length} reviews with AI justifications.`);
   };
 
   const handleDownloadSample = () => {
@@ -87,6 +92,7 @@ export default function BulkFlagPage() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    toast.info('Template Downloaded', 'Sample CSV template downloaded.');
   };
 
   const handleFlagOnGoogle = (targetUrl: string, reasonText: string) => {
@@ -177,7 +183,10 @@ export default function BulkFlagPage() {
               </span>
             </h3>
             <button
-              onClick={() => setBulkResults([])}
+              onClick={() => {
+                setBulkResults([]);
+                toast.info('Cleared', 'Bulk results table cleared.');
+              }}
               className="text-xs text-rose-600 dark:text-rose-400 hover:underline flex items-center gap-1 font-semibold"
             >
               <Trash2 className="w-3.5 h-3.5" />
